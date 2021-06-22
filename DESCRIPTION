@@ -14,3 +14,5 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Imports: 
     fgsea
+URL: https://github.com/FerrenaAlexander/FerrenaBulkRNAseq
+BugReports: https://github.com/FerrenaAlexander/FerrenaBulkRNAseq/issues
