@@ -103,11 +103,23 @@ gsea.results <- function(deg,
 
 
 ### gsea dotplot
-gsea.dotplot.onecol <- function(deg,
-                                pathways=NULL,
-                                nperm=NULL,
-                                weightmethod=NULL,
-                                onlypos=NULL,
+#' Plot GSEA results as a dotplot
+#'
+#' Visualize GSEA results with a dotplot. Dot color is given by normalized enrichment score; size is given by number of genes shared in both pathway and in dataset; and asterisks show significance.
+#'
+#' @param gseares dataframe with output of FGSEA. the first list element output of gsea.results.
+#' @param filter_nonsig_pathways T/F, whether to show only signifcant pathways (FDR <0.25); default = F
+#' @param top_pathways T/F, whether to show only top significant pathways. will show top "ntop" pathways. default = T
+#' @param ntop integer. if top_pathways=T, how many pathways to show in each "direction" of NES. If set to 25, will show 50 total pathways (25 positive NES, 25 negative NES). default = 25.
+#' @param fix_long_pathway_names T/F. Add newlines to pathway names if they exceed 50 characters. will try not to split words, assuming words are separated by underscores.
+#' @param pathwayfontsize  numeric. Font size for pathway names. default = 10.
+#' @param gsubpattern character. Set this if there is a very repeptive symbol or prefix in all the pathway names. Default is "HALLMARK_"
+#'
+#' @return a ggplot object.
+#' @export
+#'
+#' @examples
+gsea.dotplot.onecol <- function(gseares,
                                 filter_nonsig_pathways=NULL,
                                 top_pathways = NULL,
                                 ntop = NULL,
@@ -117,69 +129,13 @@ gsea.dotplot.onecol <- function(deg,
 ){
 
 
-  if(is.null( pathways )) {pathways <- tamlabscpipeline::hallmark}
-  if(is.null( nperm )) {nperm <- 10000}
-  if(is.null( weightmethod )) {weightmethod <- 'pvalue'}
-  if(is.null( onlypos )) {onlypos <- F}
+
   if(is.null( filter_nonsig_pathways )) {filter_nonsig_pathways <- F}
   if(is.null( top_pathways  )) {top_pathways <- T}
   if(is.null( ntop  )) {ntop <- 25}
   if(is.null( fix_long_pathway_names  )) {fix_long_pathway_names <- T}
   if(is.null( pathwayfontsize  )) {pathwayfontsize <- 10}
   if(is.null( gsubpattern  )) {gsubpattern <- 'HALLMARK_'}
-
-
-
-  tmp <- deg
-
-  if(onlypos == T){
-    tmp[tmp$log2FoldChange >0,]
-  }
-
-  if(weightmethod == 'pvalue') {
-    scores <- log(tmp$pvalue)
-
-    #fix underflow
-    if(any(scores == -Inf)){
-
-      numuf = length(scores[scores==-Inf])
-      adder = rev(1:numuf)
-      for(uf in rev(1:numuf)){
-        scores[uf] <- scores[numuf + 1] + (adder[uf] * -1)
-      }
-
-    }
-
-    scores <- (-1 * scores) * sign(tmp$log2FoldChange)
-    names(scores) <- tmp$Gene_name
-    rm(tmp)
-    scores <- sort(scores, decreasing = T)
-  }
-
-  if(weightmethod == 'foldchange'){
-    scores <- 10^tmp$log2FoldChange
-    names(scores) <- tmp$Gene_name
-    rm(tmp)
-    scores <- sort(scores, decreasing = T)
-  }
-
-  if(weightmethod != 'pvalue' & weightmethod != 'foldchange'){
-    stop('weightmethod must be one of either "pvalue" or "foldchange"; default (null) is pvalue')
-  }
-
-
-  suppressWarnings( fgseaRes <- fgsea(pathways=pathways, stats=scores, nperm=nperm) )
-  fgseaResTidy <- fgseaRes %>%
-    as_tibble() %>%
-    arrange(desc(NES)) %>%
-    as.data.frame()
-
-
-  res <- fgseaResTidy
-
-  rm(fgseaRes)
-  rm(fgseaResTidy)
-  rm(scores)
 
 
 
