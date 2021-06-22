@@ -4,7 +4,7 @@
 
 
 ### gsea results and leading edge
-#' GSEA results.
+#' Get GSEA results
 #'
 #' Using FGSEA, DESeq2 results, and input pathways, compute GSEA results.
 #'
