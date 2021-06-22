@@ -138,6 +138,7 @@ gsea.dotplot.onecol <- function(gseares,
   if(is.null( gsubpattern  )) {gsubpattern <- 'HALLMARK_'}
 
 
+  res <- gseares
 
   #remove repetitive pattern
   if(!is.null(gsubpattern)){
