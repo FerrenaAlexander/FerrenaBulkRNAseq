@@ -71,7 +71,7 @@ gsea.results <- function(deg,
   }
 
 
-  suppressWarnings( fgseaRes <- fgsea(pathways=pathways, stats=scores, nperm=nperm) )
+  suppressWarnings( fgseaRes <- fgsea::fgsea(pathways=pathways, stats=scores, nperm=nperm) )
   fgseaResTidy <- fgseaRes %>%
     as_tibble() %>%
     arrange(desc(NES)) %>%
