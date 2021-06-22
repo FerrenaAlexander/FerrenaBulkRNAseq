@@ -1,15 +1,13 @@
 Package: FerrenaBulkRNAseq
-Title: What the Package Does (One Line, Title Case)
+Title: Pipeline for analysis of bulkRNAseq data
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "Alexander",
+           family = "Ferrena",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+           email = "alexander.ferrena@einsteinmed.org")
+Description: This package contains a basic pipeline for RNAseq, including comparative DE via DESeq2 and GSEA via FGSEA.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
