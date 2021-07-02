@@ -35,7 +35,8 @@
 #' volcanoplot(results, colors = c('Purple', 'Pink'))
 #'
 #'
-#' To use metadata for coloration, we need a metadata dataframe that looks like this:
+#' To use metadata for coloration, we need a metadata dataframe
+#'  that looks like this:
 #'
 #' Samples   Condition    Color
 #' Sample1   KO           Red
@@ -44,8 +45,10 @@
 #' Sample4   WT           Blue
 #'
 #' contrast in this case can be input as contrast = "Condition"
-#' metadata needs a column called Color, set it at the outset, it will make all your plotting easier!
-#' condition1 and condition2 should be set, ie condition1 = "KO" and condition2 = "WT"
+#' metadata needs a column called Color, set it at the outset,
+#' it will make all your plotting easier!
+#' condition1 and condition2 should be set,
+#' ie condition1 = "KO" and condition2 = "WT"
 #'
 volcanoplot <- function(results,
                         metadata,
