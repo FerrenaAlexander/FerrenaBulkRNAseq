@@ -23,7 +23,7 @@ volcanoplot(
 \arguments{
 \item{results}{dataframe, with column names similar to the output of DESeq2::results() function}
 
-\item{metadata}{dataframe, for coloring samples using a consistently set color scheme. metadata is a dataframe similar to metadata used as input to DESEQ2; include a contrast column and colors coumn}
+\item{metadata}{dataframe, for coloring samples using a consistently set color scheme. metadata is a dataframe similar to coldata used in DESEQ2; include a contrast column and colors column}
 
 \item{contrast}{character string. name of contrast column in metadata. default will search for "Conditions"}
 
@@ -55,4 +55,27 @@ Using DESeq2 results, make a volcanoplot
 }
 \details{
 color can be set with colors or passed using metadata. the latter is encouraged, in keeping with setting a color scheme at the start and keeping it consistent in all analysis.
+}
+\examples{
+
+
+With default colors:
+volcanoplot(results)
+
+With set colors:
+volcanoplot(results, colors = c('Purple', 'Pink'))
+
+
+To use metadata for coloration, we need a metadata dataframe that looks like this:
+
+Samples   Condition    Color
+Sample1   KO           Red
+Sample2   KO           Red
+Sample3   WT           Blue
+Sample4   WT           Blue
+
+contrast in this case can be input as contrast = "Condition"
+metadata needs a column called Color, set it at the outset, it will make all your plotting easier!
+condition1 and condition2 should be set, ie condition1 = "KO" and condition2 = "WT"
+
 }

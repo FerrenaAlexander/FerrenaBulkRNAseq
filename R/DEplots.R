@@ -26,7 +26,17 @@
 #' @export
 #'
 #' @examples
-#' metadata looks like this:
+#'
+#'
+#' With default colors:
+#' volcanoplot(results)
+#'
+#' With set colors:
+#' volcanoplot(results, colors = c('Purple', 'Pink'))
+#'
+#'
+#' To use metadata for coloration, we need a metadata dataframe that looks like this:
+#'
 #' Samples   Condition    Color
 #' Sample1   KO           Red
 #' Sample2   KO           Red
