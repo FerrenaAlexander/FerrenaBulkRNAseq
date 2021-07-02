@@ -9,7 +9,7 @@
 #' color can be set with colors or passed using metadata. the latter is encouraged, in keeping with setting a color scheme at the start and keeping it consistent in all analysis.
 #'
 #' @param results dataframe, with column names similar to the output of DESeq2::results() function
-#' @param metadata dataframe, for coloring samples using a consistently set color scheme. metadata is a dataframe similar to metadata used as input to DESEQ2; include a contrast column and colors coumn
+#' @param metadata dataframe, for coloring samples using a consistently set color scheme. metadata is a dataframe similar to coldata used in DESEQ2; include a contrast column and colors column
 #' @param contrast character string. name of contrast column in metadata. default will search for "Conditions"
 #' @param condition1 character string. will be used to find the corresponding contrast-color pairing for upregulated genes
 #' @param condition2 character string. will be used to find the corresponding contrast-color pairing for downregulated genes
@@ -26,6 +26,17 @@
 #' @export
 #'
 #' @examples
+#' metadata looks like this:
+#' Samples   Condition    Color
+#' Sample1   KO           Red
+#' Sample2   KO           Red
+#' Sample3   WT           Blue
+#' Sample4   WT           Blue
+#'
+#' contrast in this case can be input as contrast = "Condition"
+#' metadata needs a column called Color, set it at the outset, it will make all your plotting easier!
+#' condition1 and condition2 should be set, ie condition1 = "KO" and condition2 = "WT"
+#'
 volcanoplot <- function(results,
                         metadata,
                         contrast,
