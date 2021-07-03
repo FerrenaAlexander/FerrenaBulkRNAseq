@@ -50,6 +50,11 @@
 #' condition1 and condition2 should be set,
 #' ie condition1 = "KO" and condition2 = "WT"
 #'
+#' If we have all that, we can do this:
+#' volcanoplot(results, metadata = metadata,
+#'             condition1 = 'KO', condition2 = 'WT')
+#'
+#'
 volcanoplot <- function(results,
                         metadata,
                         contrast,
