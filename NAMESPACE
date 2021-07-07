@@ -2,4 +2,5 @@
 
 export(gsea.dotplot.onecol)
 export(gsea.results)
+export(heatmapplot)
 export(volcanoplot)

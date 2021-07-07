@@ -68,7 +68,7 @@ volcanoplot <- function(results,
                         outliergene_pointsize,
                         outliergene_shape,
                         repeltextsize
-                        ){
+){
 
   if( missing(results) ){stop('Provide results df in format of DESeq2::results() output')}
   if( missing(metadata) ){message('No metadata provided, will rever to provided or default colors')}
@@ -84,7 +84,7 @@ volcanoplot <- function(results,
 
 
 
-  #set as DF and order by Padj
+  #set as DF and order by Pvalue
   restmp <- as.data.frame(results)
 
   #order by pvalue
@@ -221,7 +221,93 @@ volcanoplot <- function(results,
 
   )
 
- vesuvius
+  vesuvius
 
 
 }
+
+
+
+
+
+
+
+
+
+#' Make an expression heatmap with hierarchical clustering
+#'
+#' assumes a normalized counts matrix, should work with TPM too
+#'
+#' For each gene, this will z-scale the normalized counts across samples. this is good for comparison
+#'
+#'
+#' @param expmatrix matrix of data.frame with rows = genes and columns = samples
+#' @param genes character vector of gene names (rownames) in the expmatrix
+#' @param metadata data.frame in DESeq2 "coldata" format. Needs a "Sample" column with sample IDs matching colnames of expmat, a "Condition" column with the associated conditon, and a "Color" column that has the sample colors
+#' @param heatmaptitle string, name of heatmap on top
+#' @param legendtitle string, what to call the values in the gene expression matrix. Will default to "Zscaled Normalized Counts"
+#'
+#' @return
+#' @export
+#'
+#' @examples
+heatmapplot <- function(expmatrix,
+                        genes,
+                        metadata,
+
+                        heatmaptitle,
+                        legendtitle
+
+){
+
+  if( missing(expmatrix) ){stop("Please provide Expression matrix")}
+  if( missing(genes) ){stop("Please provide input genes")}
+  if( missing(metadata) ){stop("Please provide metadata dataframe")}
+
+  if( missing(legendtitle) ){legendtitle <- 'Z-Scaled\nNormalized\nCounts'}
+  if( missing(heatmaptitle) ){heatmaptitle <- ''}
+
+
+  #subset geneex pmatrix
+  tmpgem <- gemnorm[rownames(expmatrix) %in% genes,]
+
+  #scale the rows; ie, scale gene expression value for each gene across samples
+  tmpgem <- t(scale(t(tmpgem)))
+
+
+  #set up the column annotation
+  #annotation df, has sample (column) name and color
+  annotdf <- data.frame(sample = colnames(tmpgem),
+                        sampcheck = metadata[match(colnames(tmpgem), metadata$Sample), "Sample"],
+                        cond = metadata[match(colnames(tmpgem), metadata$Sample), "Condition"],
+                        color = metadata[match(colnames(tmpgem), metadata$Sample), "Color"])
+
+  #define colors, need to use this list thing for complexheatmap
+  hacol <- list(Condition = annotdf$color) ; names(hacol[[1]]) <- annotdf$cond
+
+  #create the annotation object
+  ha <- ComplexHeatmap::HeatmapAnnotation(Condition = annotdf[,3], col = hacol, name = 'Condition')
+
+  #rowlabs, if less than 75 genes then label them, if not leave blank
+  if (nrow(tmpgem) >75){  row_labels =  (rep('', nrow(tmpgem))) }else{ row_labels <- rownames(tmpgem)}
+
+
+  #heatmap
+  hm <- ComplexHeatmap::Heatmap(tmpgem,
+                                name = legendtitle,
+                                cluster_rows = T, cluster_columns = T,
+                                col = rev(colorRampPalette( brewer.pal(9, "RdYlBu") )(255)) ,
+                                row_labels = row_labels,
+                                row_names_gp = gpar(fontsize = 7.5),
+                                column_names_gp = gpar(fontsize = 7.5), column_names_rot = 45,
+                                clustering_distance_columns = 'pearson',
+                                column_title = heatmaptitle,
+                                top_annotation = ha)
+
+  hm
+
+}
+
+
+
+
