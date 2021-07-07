@@ -271,6 +271,14 @@ heatmapplot <- function(expmatrix,
   #subset geneex pmatrix
   tmpgem <- gemnorm[rownames(expmatrix) %in% genes,]
 
+  #some genes have all 0s, remove those...
+  if(any(rowSums(tmpgem) == 0)){
+    zeros <- names(which(rowSums(tmpgem) == 0))
+    warning("removing genes with all zeros:\n",
+            paste(zeros, collapse = ', '))
+
+  }
+
   #scale the rows; ie, scale gene expression value for each gene across samples
   tmpgem <- t(scale(t(tmpgem)))
 
