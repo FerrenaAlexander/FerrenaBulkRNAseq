@@ -86,7 +86,13 @@ volcanoplot <- function(results,
 
   #set as DF and order by Padj
   restmp <- as.data.frame(results)
+
+  #order by pvalue
   restmp <- restmp[order(restmp$pvalue),]
+
+  #remove outlier genes with p = NA (cooks distance)
+  restmp <- restmp[!is.na(restmp$pvalue),]
+  restmp <- restmp[!is.na(restmp$padj),]
 
   #make df that's eaiser to deal with:
   colskeep <- c('baseMean', 'log2FoldChange',
