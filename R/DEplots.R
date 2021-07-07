@@ -277,6 +277,8 @@ heatmapplot <- function(expmatrix,
     warning("removing genes with all zeros:\n",
             paste(zeros, collapse = ', '))
 
+    tmpgem <- tmpgem[!(rownames(tmpgem) %in% zeros),]
+
   }
 
   #scale the rows; ie, scale gene expression value for each gene across samples
