@@ -20,14 +20,13 @@
 #' @examples
 gsea.results <- function(results,
                          pathways=NULL,
-                         nperm=NULL,
                          weightmethod=NULL,
                          onlypos=NULL
 ){
 
 
-  if(is.null( pathways )) {pathways <- tamlabscpipeline::hallmark}
-  if(is.null( nperm )) {nperm <- 10000}
+  if(is.null( pathways )) {stop('No input gene lists or pathways provided')}
+  #if(is.null( nperm )) {nperm <- 10000} #nperm no longer needed, now use fgsea multilevel
   if(is.null( weightmethod )) {weightmethod <- 'pvalue'}
   if(is.null( onlypos )) {onlypos <- F}
 
@@ -70,12 +69,18 @@ gsea.results <- function(results,
     stop('weightmethod must be one of either "pvalue" or "foldchange"; default (null) is pvalue')
   }
 
+  #old method
+  # suppressWarnings( fgseaRes <- fgsea::fgsea(pathways=pathways, stats=scores, nperm=nperm) )
+  # fgseaResTidy <- fgseaRes %>%
+  #   as_tibble() %>%
+  #   arrange(desc(NES)) %>%
+  #   as.data.frame()
 
-  suppressWarnings( fgseaRes <- fgsea::fgsea(pathways=pathways, stats=scores, nperm=nperm) )
+  #new method - no need for nperm... also do not suppress messages...
+  fgseaRes <- fgsea::fgsea(pathways=pathways, stats=scores, nperm=nperm)
   fgseaResTidy <- fgseaRes %>%
-    as_tibble() %>%
-    arrange(desc(NES)) %>%
-    as.data.frame()
+      arrange(desc(NES)) %>%
+      as.data.frame()
 
 
   res <- fgseaResTidy
@@ -145,11 +150,11 @@ gsea.dotplot.onecol <- function(gseares,
     res$pathway <- gsub(gsubpattern, '', res$pathway)
   }
 
-  #got some NAs at some point in the past, not surw why
+  #got some NAs at some point in the past, not sure why
   res$NES[is.na(res$NES)] <- 0
 
   #get rid of leading edge...
-  res <- res[,-8]
+  #res <- res[,-8]
 
 
   #fix long names
