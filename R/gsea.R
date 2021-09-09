@@ -10,7 +10,6 @@
 #'
 #' @param results dataframe with column names similar to the output of DESeq2::results() function, with columns labeleld "log2FoldChange" and "pvalue"
 #' @param pathways list of character vectors containing gene names in same format as results; each list element's name should be the name of the pathway
-#' @param nperm how many permutations to run in FGSEA (may be deprecated). Default is 10000
 #' @param weightmethod one of "pvalue" or "foldchange". how to weight the results results. Default is "pvalue"
 #' @param onlypos T/F. whether to use only positive log fold change genes. Default is False.
 #'
