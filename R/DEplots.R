@@ -269,15 +269,16 @@ heatmapplot <- function(expmatrix,
 
 
   #subset geneex pmatrix
-  tmpgem <- expmatrix[rownames(expmatrix) %in% genes,]
+  tmpgem <- expmatrix[rownames(expmatrix) %in% genes,,drop=F]
 
-  #if only one gene, above forces tmpgem to be vector, but it needs to stay a one-row matrix
-  goodgenes <- rownames(expmatrix)[rownames(expmatrix) %in% genes]
-  if( length( goodgenes ) == 0 ){stop('no input genes in matrix :(')}
-  if( length( goodgenes ) == 1 ){
-    tmpgem <- as.matrix(t(tmpgem))
-    rownames(tmpgem) <- goodgenes
-  }
+  # LATER EDIT - adding drop=F should fix that...
+  # #if only one gene, above forces tmpgem to be vector, but it needs to stay a one-row matrix
+  # goodgenes <- rownames(expmatrix)[rownames(expmatrix) %in% genes]
+  # if( length( goodgenes ) == 0 ){stop('no input genes in matrix :(')}
+  # if( length( goodgenes ) == 1 ){
+  #   tmpgem <- as.matrix(t(tmpgem))
+  #   rownames(tmpgem) <- goodgenes
+  # }
 
   #some genes have all 0s, remove those...
   if(any(rowSums(tmpgem) == 0)){
