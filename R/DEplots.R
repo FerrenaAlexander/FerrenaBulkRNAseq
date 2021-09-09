@@ -273,6 +273,7 @@ heatmapplot <- function(expmatrix,
 
   #if only one gene, above forces tmpgem to be vector, but it needs to stay a one-row matrix
   goodgenes <- rownames(expmatrix)[rownames(expmatrix) %in% genes]
+  if( length( goodgenes ) == 0 ){stop('no input genes in matrix :(')}
   if( length( goodgenes ) == 1 ){
     tmpgem <- as.matrix(t(tmpgem))
     rownames(tmpgem) <- goodgenes
