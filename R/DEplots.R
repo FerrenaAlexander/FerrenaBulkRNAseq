@@ -269,7 +269,14 @@ heatmapplot <- function(expmatrix,
 
 
   #subset geneex pmatrix
-  tmpgem <- gemnorm[rownames(expmatrix) %in% genes,]
+  tmpgem <- expmatrix[rownames(expmatrix) %in% genes,]
+
+  #if only one gene, above forces tmpgem to be vector, but it needs to stay a one-row matrix
+  goodgenes <- rownames(expmatrix)[rownames(expmatrix) %in% genes]
+  if( length( goodgenes ) == 1 ){
+    tmpgem <- as.matrix(t(tmpgem))
+    rownames(tmpgem) <- goodgenes
+  }
 
   #some genes have all 0s, remove those...
   if(any(rowSums(tmpgem) == 0)){
