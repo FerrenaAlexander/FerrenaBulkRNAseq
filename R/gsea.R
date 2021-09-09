@@ -76,7 +76,7 @@ gsea.results <- function(results,
   #   as.data.frame()
 
   #new method - no need for nperm... also do not suppress messages...
-  fgseaRes <- fgsea::fgsea(pathways=pathways, stats=scores, nperm=nperm)
+  fgseaRes <- fgsea::fgsea(pathways=pathways, stats=scores)
   fgseaResTidy <- fgseaRes %>%
       arrange(desc(NES)) %>%
       as.data.frame()
