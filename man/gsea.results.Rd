@@ -4,20 +4,12 @@
 \alias{gsea.results}
 \title{Get GSEA results}
 \usage{
-gsea.results(
-  results,
-  pathways = NULL,
-  nperm = NULL,
-  weightmethod = NULL,
-  onlypos = NULL
-)
+gsea.results(results, pathways = NULL, weightmethod = NULL, onlypos = NULL)
 }
 \arguments{
 \item{results}{dataframe with column names similar to the output of DESeq2::results() function, with columns labeleld "log2FoldChange" and "pvalue"}
 
 \item{pathways}{list of character vectors containing gene names in same format as results; each list element's name should be the name of the pathway}
-
-\item{nperm}{how many permutations to run in FGSEA (may be deprecated). Default is 10000}
 
 \item{weightmethod}{one of "pvalue" or "foldchange". how to weight the results results. Default is "pvalue"}
 
