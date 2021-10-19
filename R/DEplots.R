@@ -300,11 +300,14 @@ heatmapplot <- function(expmatrix,
   }
 
   #log2 transform rows (gene exp  values)
-  tmpgem <- t( apply(tmpgem, 1, function(x){log2(x+1)}) )
+  if(do.log2==T){
+    tmpgem <- t( apply(tmpgem, 1, function(x){log2(x+1)}) )
+  }
 
   #scale the rows; ie, scale gene expression value for each gene across samples
-  tmpgem <- t(scale(t(tmpgem)))
-
+  if(do.scale==T){
+    tmpgem <- t(scale(t(tmpgem)))
+  }
 
   #set up the column annotation
   #annotation df, has sample (column) name and color
