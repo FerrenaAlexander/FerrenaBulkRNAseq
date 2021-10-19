@@ -246,6 +246,9 @@ volcanoplot <- function(results,
 #' @param metadata data.frame in DESeq2 "coldata" format. Needs a "Sample" column with sample IDs matching colnames of expmat, a "Condition" column with the associated conditon, and a "Color" column that has the sample colors
 #' @param heatmaptitle string, name of heatmap on top
 #' @param legendtitle string, what to call the values in the gene expression matrix. Will default to "Zscaled Normalized Counts"
+#' @param do.log2 T/F, whether to log2(x+1) transform gene expression values (rows) in the matrix
+#' @param do.scale T/F, whether to scale (z-transform, (x - mean(x) / sd(x))) the gene expression values (rows) of the matrix
+#'
 #'
 #' @return
 #' @export
@@ -256,7 +259,10 @@ heatmapplot <- function(expmatrix,
                         metadata,
 
                         heatmaptitle,
-                        legendtitle
+                        legendtitle,
+
+                        do.log2,
+                        do.scale
 
 ){
 
@@ -266,6 +272,9 @@ heatmapplot <- function(expmatrix,
 
   if( missing(legendtitle) ){legendtitle <- 'Z-Scaled\nNormalized\nCounts'}
   if( missing(heatmaptitle) ){heatmaptitle <- ''}
+
+  if( missing(do.log2) ){do.log2 <- T}
+  if( missing(do.scale) ){do.scale <- T}
 
 
   #subset geneex pmatrix
@@ -289,6 +298,9 @@ heatmapplot <- function(expmatrix,
     tmpgem <- tmpgem[!(rownames(tmpgem) %in% zeros),]
 
   }
+
+  #log2 transform rows (gene exp  values)
+  tmpgem <- t( apply(tmpgem, 1, function(x){log2(x+1)}) )
 
   #scale the rows; ie, scale gene expression value for each gene across samples
   tmpgem <- t(scale(t(tmpgem)))

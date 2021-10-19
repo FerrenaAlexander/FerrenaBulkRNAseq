@@ -4,7 +4,15 @@
 \alias{heatmapplot}
 \title{Make an expression heatmap with hierarchical clustering}
 \usage{
-heatmapplot(expmatrix, genes, metadata, heatmaptitle, legendtitle)
+heatmapplot(
+  expmatrix,
+  genes,
+  metadata,
+  heatmaptitle,
+  legendtitle,
+  do.log2,
+  do.scale
+)
 }
 \arguments{
 \item{expmatrix}{matrix of data.frame with rows = genes and columns = samples}
@@ -16,6 +24,10 @@ heatmapplot(expmatrix, genes, metadata, heatmaptitle, legendtitle)
 \item{heatmaptitle}{string, name of heatmap on top}
 
 \item{legendtitle}{string, what to call the values in the gene expression matrix. Will default to "Zscaled Normalized Counts"}
+
+\item{do.log2}{T/F, whether to log2(x+1) transform gene expression values (rows) in the matrix}
+
+\item{do.scale}{T/F, whether to scale (z-transform, (x - mean(x) / sd(x))) the gene expression values (rows) of the matrix}
 }
 \value{
 
