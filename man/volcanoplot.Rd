@@ -17,7 +17,9 @@ volcanoplot(
   pointsize,
   outliergene_pointsize,
   outliergene_shape,
-  repeltextsize
+  repeltextsize,
+  change_gene_label,
+  gene_label_equivalency
 )
 }
 \arguments{
@@ -46,6 +48,10 @@ volcanoplot(
 \item{outliergene_shape}{numeric, code for shape symbol of logFC outlier genes, default = 6, which is a triangle}
 
 \item{repeltextsize}{numeric, size of repel text gene labels, default is 2}
+
+\item{change_gene_label}{T/F, whether to change gene labels, defautl F}
+
+\item{gene_label_equivalency}{data.frame, if change_gene_label is set to T, need to provide a data.frame with two columns, first column with current gene labels (rownames of res) and second column with gene labels you want to plot as labels. Useful for when you have res with IDs but want to show gene symbols.}
 }
 \value{
 a ggplot2 object.

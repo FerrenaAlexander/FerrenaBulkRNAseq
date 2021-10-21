@@ -21,6 +21,8 @@
 #' @param outliergene_pointsize numeric, point size of logFC outlier genes, default = 2
 #' @param outliergene_shape numeric, code for shape symbol of logFC outlier genes, default = 6, which is a triangle
 #' @param repeltextsize numeric, size of repel text gene labels, default is 2
+#' @param change_gene_label T/F, whether to change gene labels, defautl F
+#' @param gene_label_equivalency data.frame, if change_gene_label is set to T, need to provide a data.frame with two columns, first column with current gene labels (rownames of res) and second column with gene labels you want to plot as labels. Useful for when you have res with IDs but want to show gene symbols.
 #'
 #' @return a ggplot2 object.
 #' @export
@@ -67,7 +69,9 @@ volcanoplot <- function(results,
                         pointsize,
                         outliergene_pointsize,
                         outliergene_shape,
-                        repeltextsize
+                        repeltextsize,
+                        change_gene_label,
+                        gene_label_equivalency
 ){
 
   if( missing(results) ){stop('Provide results df in format of DESeq2::results() output')}
@@ -81,6 +85,9 @@ volcanoplot <- function(results,
   if( missing(outliergene_pointsize) ) {outliergene_pointsize <- 2}
   if( missing(outliergene_shape) ) {outliergene_shape <- 6}
   if( missing(repeltextsize) ) {repeltextsize <- 2}
+
+  if( missing(change_gene_label) ) {change_gene_label <- F}
+  if( change_gene_label ==T & missing(gene_label_equivalency) ) { stop('If trying to change gene labels, please provide a data.frame mapping current labels with desired labels')}
 
 
 
@@ -202,6 +209,10 @@ volcanoplot <- function(results,
   }
 
 
+  if(change_gene_label==T){
+    gene_label_equivalency <- gene_label_equivalency[match(keeprepel$repel, gene_label_equivalency[,1]),]
+    keeprepel$repel <- gene_label_equivalency[,2]
+  }
 
 
   #volcano plot
@@ -225,6 +236,7 @@ volcanoplot <- function(results,
 
 
 }
+
 
 
 
