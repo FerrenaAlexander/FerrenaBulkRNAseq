@@ -11,11 +11,13 @@ heatmapplot(
   heatmaptitle,
   legendtitle,
   do.log2,
-  do.scale
+  do.scale,
+  change_gene_label,
+  gene_label_equivalency
 )
 }
 \arguments{
-\item{expmatrix}{matrix of data.frame with rows = genes and columns = samples}
+\item{expmatrix}{matrix or data.frame with rows = genes and columns = samples}
 
 \item{genes}{character vector of gene names (rownames) in the expmatrix}
 
@@ -28,13 +30,14 @@ heatmapplot(
 \item{do.log2}{T/F, whether to log2(x+1) transform gene expression values (rows) in the matrix}
 
 \item{do.scale}{T/F, whether to scale (z-transform, (x - mean(x) / sd(x))) the gene expression values (rows) of the matrix}
+
+\item{change_gene_label}{T/F, whether to change gene labels, defautl F}
+
+\item{gene_label_equivalency}{data.frame, if change_gene_label is set to T, need to provide a data.frame with two columns, first column with current gene labels (rownames of res) and second column with gene labels you want to plot as labels. Useful for when you have res with IDs but want to show gene symbols.}
 }
 \value{
 
 }
 \description{
-assumes a normalized counts matrix, should work with TPM too
-}
-\details{
-For each gene, this will z-scale the normalized counts across samples. this is good for comparison
+assumes a normalized counts matrix, should work with TPM too. Currently, color depends on addding metadata. Later, will add support for manually defined colors.
 }

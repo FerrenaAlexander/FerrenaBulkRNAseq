@@ -259,18 +259,20 @@ volcanoplot <- function(results,
 
 #' Make an expression heatmap with hierarchical clustering
 #'
-#' assumes a normalized counts matrix, should work with TPM too
-#'
-#' For each gene, this will z-scale the normalized counts across samples. this is good for comparison
+#' assumes a normalized counts matrix, should work with TPM too. Currently, color depends on addding metadata. Later, will add support for manually defined colors.
 #'
 #'
-#' @param expmatrix matrix of data.frame with rows = genes and columns = samples
+#'
+#'
+#' @param expmatrix matrix or data.frame with rows = genes and columns = samples
 #' @param genes character vector of gene names (rownames) in the expmatrix
 #' @param metadata data.frame in DESeq2 "coldata" format. Needs a "Sample" column with sample IDs matching colnames of expmat, a "Condition" column with the associated conditon, and a "Color" column that has the sample colors
 #' @param heatmaptitle string, name of heatmap on top
 #' @param legendtitle string, what to call the values in the gene expression matrix. Will default to "Zscaled Normalized Counts"
 #' @param do.log2 T/F, whether to log2(x+1) transform gene expression values (rows) in the matrix
 #' @param do.scale T/F, whether to scale (z-transform, (x - mean(x) / sd(x))) the gene expression values (rows) of the matrix
+#' @param change_gene_label T/F, whether to change gene labels, defautl F
+#' @param gene_label_equivalency data.frame, if change_gene_label is set to T, need to provide a data.frame with two columns, first column with current gene labels (rownames of res) and second column with gene labels you want to plot as labels. Useful for when you have res with IDs but want to show gene symbols.
 #'
 #'
 #' @return
@@ -285,7 +287,10 @@ heatmapplot <- function(expmatrix,
                         legendtitle,
 
                         do.log2,
-                        do.scale
+                        do.scale,
+
+                        change_gene_label,
+                        gene_label_equivalency
 
 ){
 
@@ -293,11 +298,15 @@ heatmapplot <- function(expmatrix,
   if( missing(genes) ){stop("Please provide input genes")}
   if( missing(metadata) ){stop("Please provide metadata dataframe")}
 
-  if( missing(legendtitle) ){legendtitle <- 'Z-Scaled\nNormalized\nCounts'}
+  if( missing(legendtitle) ){legendtitle <- 'Expression'}
   if( missing(heatmaptitle) ){heatmaptitle <- ''}
 
   if( missing(do.log2) ){do.log2 <- T}
   if( missing(do.scale) ){do.scale <- T}
+
+  if( missing(change_gene_label) ) {change_gene_label <- F}
+  if( change_gene_label ==T & missing(gene_label_equivalency) ) { stop('If trying to change gene labels, please provide a data.frame mapping current labels with desired labels')}
+
 
 
   #subset geneex pmatrix
@@ -340,13 +349,23 @@ heatmapplot <- function(expmatrix,
                         color = metadata[match(colnames(tmpgem), metadata$Sample), "Color"])
 
   #define colors, need to use this list thing for complexheatmap
-  hacol <- list(Condition = annotdf$color) ; names(hacol[[1]]) <- annotdf$cond
+  hacol <- list(Condition = annotdf[,4]) ; names(hacol[[1]]) <- annotdf[,3]
 
   #create the annotation object
   ha <- ComplexHeatmap::HeatmapAnnotation(Condition = annotdf[,3], col = hacol, name = 'Condition')
 
   #rowlabs, if less than 75 genes then label them, if not leave blank
   if (nrow(tmpgem) >75){  row_labels =  (rep('', nrow(tmpgem))) }else{ row_labels <- rownames(tmpgem)}
+
+  #optionally chnage gene labels
+  if( change_gene_label==T & length(row_labels) <= 75 ){
+
+    gene_label_equivalency <- gene_label_equivalency[match(row_labels, gene_label_equivalency[,1]),]
+
+    row_labels <- gene_label_equivalency[,2]
+
+  }
+
 
 
   #heatmap
