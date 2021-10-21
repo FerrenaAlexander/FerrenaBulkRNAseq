@@ -36,6 +36,17 @@
 #' With set colors:
 #' volcanoplot(results, colors = c('Purple', 'Pink'))
 #'
+#' With different labels, for example if your results have EnsemblIDs but you want to show gene symbols:
+#' volcanoplot(results, change_gene_label = T, gene_label_equivalency = gene_name_df)
+#'
+#' where gene_name_df is a data.frame with first two columns like this:
+#' GeneLabelsNum  Gene SymbolsLetter
+#' 1              A
+#' 2              B
+#' 3              C
+#'
+#' Your results gene names should be like the first column and the labelled points will be like the second column.
+#'
 #'
 #' To use metadata for coloration, we need a metadata dataframe
 #'  that looks like this:
