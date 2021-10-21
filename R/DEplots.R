@@ -30,7 +30,7 @@
 #' @examples
 #'
 #'
-#' With default colors:
+#' With default colors (red up, blue down):
 #' volcanoplot(results)
 #'
 #' With set colors:

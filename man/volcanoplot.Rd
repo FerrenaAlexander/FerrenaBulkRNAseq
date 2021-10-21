@@ -65,7 +65,7 @@ color can be set with colors or passed using metadata. the latter is encouraged,
 \examples{
 
 
-With default colors:
+With default colors (red up, blue down):
 volcanoplot(results)
 
 With set colors:
