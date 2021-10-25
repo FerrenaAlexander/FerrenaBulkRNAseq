@@ -52,14 +52,14 @@ gsea.results <- function(results,
     }
 
     scores <- (-1 * scores) * sign(tmp$log2FoldChange)
-    names(scores) <- tmp$Gene_name
+    names(scores) <- rownames(tmp)
     rm(tmp)
     scores <- sort(scores, decreasing = T)
   }
 
   if(weightmethod == 'foldchange'){
     scores <- 10^tmp$log2FoldChange
-    names(scores) <- tmp$Gene_name
+    names(scores) <- rownames(tmp)
     rm(tmp)
     scores <- sort(scores, decreasing = T)
   }
