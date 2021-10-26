@@ -273,6 +273,7 @@ volcanoplot <- function(results,
 #' @param do.scale T/F, whether to scale (z-transform, (x - mean(x) / sd(x))) the gene expression values (rows) of the matrix
 #' @param change_gene_label T/F, whether to change gene labels, defautl F
 #' @param gene_label_equivalency data.frame, if change_gene_label is set to T, need to provide a data.frame with two columns, first column with current gene labels (rownames of res) and second column with gene labels you want to plot as labels. Useful for when you have res with IDs but want to show gene symbols.
+#' @param clustering_distance_columns distance to use for ComplexHeatmap::Heatmap clustering of rows, default is pearson
 #'
 #'
 #' @return
@@ -290,7 +291,9 @@ heatmapplot <- function(expmatrix,
                         do.scale,
 
                         change_gene_label,
-                        gene_label_equivalency
+                        gene_label_equivalency,
+
+                        clustering_distance_columns
 
 ){
 
@@ -307,6 +310,7 @@ heatmapplot <- function(expmatrix,
   if( missing(change_gene_label) ) {change_gene_label <- F}
   if( change_gene_label ==T & missing(gene_label_equivalency) ) { stop('If trying to change gene labels, please provide a data.frame mapping current labels with desired labels')}
 
+  if( missing(clustering_distance_columns) ){ clustering_distance_columns <- 'pearson' }
 
 
   #subset geneex pmatrix
