@@ -274,6 +274,7 @@ volcanoplot <- function(results,
 #' @param change_gene_label T/F, whether to change gene labels, defautl F
 #' @param gene_label_equivalency data.frame, if change_gene_label is set to T, need to provide a data.frame with two columns, first column with current gene labels (rownames of res) and second column with gene labels you want to plot as labels. Useful for when you have res with IDs but want to show gene symbols.
 #' @param clustering_distance_columns distance to use for ComplexHeatmap::Heatmap clustering of rows, default is pearson
+#' @param ... Additionaly arguments to pass to ComplexHeatmap::Heatmap
 #'
 #'
 #' @return
@@ -293,7 +294,9 @@ heatmapplot <- function(expmatrix,
                         change_gene_label,
                         gene_label_equivalency,
 
-                        clustering_distance_columns
+                        clustering_distance_columns,
+
+                        ...
 
 ){
 
@@ -380,9 +383,9 @@ heatmapplot <- function(expmatrix,
                                 row_labels = row_labels,
                                 row_names_gp = gpar(fontsize = 7.5),
                                 column_names_gp = gpar(fontsize = 7.5), column_names_rot = 45,
-                                clustering_distance_columns = clustering_distance_columns,
                                 column_title = heatmaptitle,
-                                top_annotation = ha)
+                                top_annotation = ha,
+                                ...)
 
   hm
 

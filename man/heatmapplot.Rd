@@ -14,7 +14,8 @@ heatmapplot(
   do.scale,
   change_gene_label,
   gene_label_equivalency,
-  clustering_distance_columns
+  clustering_distance_columns,
+  ...
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ heatmapplot(
 \item{gene_label_equivalency}{data.frame, if change_gene_label is set to T, need to provide a data.frame with two columns, first column with current gene labels (rownames of res) and second column with gene labels you want to plot as labels. Useful for when you have res with IDs but want to show gene symbols.}
 
 \item{clustering_distance_columns}{distance to use for ComplexHeatmap::Heatmap clustering of rows, default is pearson}
+
+\item{...}{Additionaly arguments to pass to ComplexHeatmap::Heatmap}
 }
 \value{
 
