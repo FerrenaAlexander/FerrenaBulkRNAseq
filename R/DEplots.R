@@ -380,7 +380,7 @@ heatmapplot <- function(expmatrix,
                                 row_labels = row_labels,
                                 row_names_gp = gpar(fontsize = 7.5),
                                 column_names_gp = gpar(fontsize = 7.5), column_names_rot = 45,
-                                clustering_distance_columns = 'pearson',
+                                clustering_distance_columns = clustering_distance_columns,
                                 column_title = heatmaptitle,
                                 top_annotation = ha)
 
