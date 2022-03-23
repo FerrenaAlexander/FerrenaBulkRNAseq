@@ -17,6 +17,7 @@
 #' @param pval_thres numeric, alpha value cutoff for significant genes. default = 0.05
 #' @param lfc_thres numeric, logFC cutoff for significant genes, will be symmetric on both sides. default = 0
 #' @param lfclimit numeric, lofFC cutoff for outlier genes, will be symmetric on both sides. default = 15
+#' @param use_padj T/f, default = T. Use adjustec p-value (passed as df[,'padj']) for y axis and coloring of significant genes.
 #' @param pointsize numeric, point size of graph, passed to geom_point, default = 0.5
 #' @param outliergene_pointsize numeric, point size of logFC outlier genes, default = 2
 #' @param outliergene_shape numeric, code for shape symbol of logFC outlier genes, default = 6, which is a triangle
@@ -77,6 +78,7 @@ volcanoplot <- function(results,
                         lfc_thres,
                         lfclimit,
 
+                        use_padj,
                         pointsize,
                         outliergene_pointsize,
                         outliergene_shape,
@@ -92,6 +94,7 @@ volcanoplot <- function(results,
   if( missing(lfc_thres) ) {lfc_thres <- 0}
   if( missing(lfclimit) ) {lfclimit <- 15}
 
+  if( missing(use_padj) ) {use_padj <- T}
   if( missing(pointsize) ) {pointsize <- 0.5}
   if( missing(outliergene_pointsize) ) {outliergene_pointsize <- 2}
   if( missing(outliergene_shape) ) {outliergene_shape <- 6}
@@ -119,6 +122,13 @@ volcanoplot <- function(results,
 
   #set up gene_name col
   restmp$Gene_name <- rownames(restmp)
+
+
+  # switch to default using padj...
+  if(use_padj==T){
+    restmp$pvalue <- restmp$padj
+  }
+
 
   #set up repel label by applying cutoffs ; this essentially selects the significant genes
   # significance is defined by lfc_thres and pval_thres
@@ -243,8 +253,14 @@ volcanoplot <- function(results,
 
   )
 
-  vesuvius
 
+
+
+  if(use_padj==T){
+    vesuvius <- vesuvius+labs(y="-Log10 Adjusted P-value")
+  }
+
+  vesuvius
 
 }
 

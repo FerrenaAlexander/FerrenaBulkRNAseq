@@ -14,6 +14,7 @@ volcanoplot(
   pval_thres,
   lfc_thres,
   lfclimit,
+  use_padj,
   pointsize,
   outliergene_pointsize,
   outliergene_shape,
@@ -40,6 +41,8 @@ volcanoplot(
 \item{lfc_thres}{numeric, logFC cutoff for significant genes, will be symmetric on both sides. default = 0}
 
 \item{lfclimit}{numeric, lofFC cutoff for outlier genes, will be symmetric on both sides. default = 15}
+
+\item{use_padj}{T/f, default = T. Use adjustec p-value (passed as df\link{,'padj'}) for y axis and coloring of significant genes.}
 
 \item{pointsize}{numeric, point size of graph, passed to geom_point, default = 0.5}
 
