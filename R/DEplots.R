@@ -241,7 +241,6 @@ volcanoplot <- function(results,
   suppressWarnings(
     vesuvius <- ggplot(restmp, aes(x = log2FoldChange, y = neglogtenp))+
       geom_point(col = restmp$repelcol, size = pointsize)+
-      geom_point(data= ext, col = ext$repelcol, size = outliergene_pointsize, shape = outliergene_shape)+
       geom_vline(xintercept = c(lfc_thres, -1*lfc_thres), linetype = 'dotted', col = 'firebrick', alpha=0.7)+
       geom_hline(yintercept = -log10(pval_thres),  linetype = 'dotted', col = 'firebrick', alpha = 0.7)+
       ggrepel::geom_text_repel(data = keeprepel, aes(label = repel), col = keeprepel$repelcol, size = repeltextsize)+
@@ -253,6 +252,12 @@ volcanoplot <- function(results,
 
   )
 
+  #add extreme genes if they exist
+  if( any(abs(significantres$log2FoldChange) > lfclimit) ){
+
+    vesuvius <- vesuvius + geom_point(data= ext, col = ext$repelcol, size = outliergene_pointsize, shape = outliergene_shape)
+
+  }
 
 
 
