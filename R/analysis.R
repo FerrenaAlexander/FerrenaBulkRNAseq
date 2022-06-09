@@ -171,5 +171,80 @@ modulescore <- function(gem, genelist, numbins=NULL, numcontrolgenesperbin=NULL)
 
 
 
+regressout <- function(gem, var_to_reg, scale=NULL, center=NULL){
+  if(is.null(scale)){scale=T}
+  if(is.null(center)){center=T}
+
+  genes <- rownames(gem)
+
+  if(!(scale == F & center == F )){
+
+    gem <- as.data.frame(t(scale(t(gem), center=center, scale = scale)))
+  }
+
+  message('Initiating regression for matrix')
+  total = nrow(gem) - 1
+  pb <- txtProgressBar(min = 0, max = total, style = 3)
+
+  l <- vector(mode = 'list', length = nrow(gem))
+  for(i in 1:nrow(gem)){
+    x <- t(gem[i,])[,1]
+    l[[i]] <- lm(x ~ var_to_reg)$residuals
+
+    setTxtProgressBar(pb, i)
+  }
+  rgem <- as.data.frame(bind_rows(l))
+  rownames(rgem) <- genes
+
+  rgem
+}
+
+#' Regress out a variable from a gene expression matrix with linear regression
+#'
+#' Remove the effect of a variable from a gene expression matrix. This is done with linear regression. For each gene, we take lm(gene expression ~ var_to_reg). We use the residuals from this linear model as the new expression values.
+#' This was inspired by the Seurat::ScaleData function for single-cell analysis.
+#'
+#'
+#'
+#'
+#' @param gem a matrix or data.frame; gene expression values with rows = genes aand columns = samples
+#' @param var_to_reg a vector with length = ncol(gem) (ie a variable with some number for each sample)
+#' @param scale T/F, default T, scale gem before lm
+#' @param center T/F, default T, center gem before lm
+#'
+#' @return
+#' @export
+#'
+#' @examples
+regressout <- function(gem, var_to_reg, scale=NULL, center=NULL){
+  if(is.null(scale)){scale=T}
+  if(is.null(center)){center=T}
+
+  genes <- rownames(gem)
+
+  if(!(scale == F & center == F )){
+
+    gem <- as.data.frame(t(scale(t(gem), center=center, scale = scale)))
+  }
+
+  message('Initiating regression for matrix')
+  total = nrow(gem) - 1
+  pb <- txtProgressBar(min = 0, max = total, style = 3)
+
+  l <- vector(mode = 'list', length = nrow(gem))
+  for(i in 1:nrow(gem)){
+    x <- t(gem[i,])[,1]
+    l[[i]] <- lm(x ~ var_to_reg)$residuals
+
+    setTxtProgressBar(pb, i)
+  }
+  rgem <- as.data.frame(bind_rows(l))
+  rownames(rgem) <- genes
+
+  rgem
+}
+
+
+
 
 

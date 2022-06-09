@@ -41,9 +41,6 @@ heatmapplot(
 
 \item{...}{Additionaly arguments to pass to ComplexHeatmap::Heatmap}
 }
-\value{
-
-}
 \description{
 assumes a normalized counts matrix, should work with TPM too. Currently, color depends on addding metadata. Later, will add support for manually defined colors.
 }
