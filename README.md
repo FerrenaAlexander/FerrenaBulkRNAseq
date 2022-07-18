@@ -21,6 +21,10 @@ You can install from [GitHub](https://github.com/) with:
 devtools::install_github("FerrenaAlexander/FerrenaBulkRNAseq")
 ```
 
+The dependency package `fgsea` is a bioconductor package which seems to
+require compilation to install, so if prompted you should install that
+with compilation.
+
 <!-- ## Example -->
 <!-- This is a basic example which shows you how to solve a common problem: -->
 <!-- ```{r example} -->
