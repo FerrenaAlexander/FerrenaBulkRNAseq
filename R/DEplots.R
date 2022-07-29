@@ -317,6 +317,11 @@ heatmapplot <- function(expmatrix,
 
                         clustering_distance_columns,
 
+                        deres,
+                        pval_thres,
+                        lfc_thres,
+                        use_padj,
+
                         ...
 
 ){
@@ -336,6 +341,9 @@ heatmapplot <- function(expmatrix,
 
   if( missing(clustering_distance_columns) ){ clustering_distance_columns <- 'pearson' }
 
+  if( missing(pval_thres) ){pval_thres <- 0.05}
+  if( missing(lfc_thres) ){lfc_thres <- 1}
+  if( missing(use_padj) ){use_padj <- T}
 
   #subset geneex pmatrix
   tmpgem <- expmatrix[rownames(expmatrix) %in% genes,,drop=F]
@@ -381,6 +389,33 @@ heatmapplot <- function(expmatrix,
 
   #create the annotation object
   ha <- ComplexHeatmap::HeatmapAnnotation(Condition = annotdf[,3], col = hacol, name = 'Condition')
+
+
+
+  # if deres is given, then try to add asterisks to sig DEGs
+  if(!missing(deres)){
+    message('adding significance values')
+
+    deres <- deres[complete.cases(deres,)]
+
+    if(use_padj==T){
+      sig <- deres[,deres$padj < 0.05]
+    } else{
+      sig <- deres[,deres$pvalue < 0.05]
+    }
+
+    sig <- sig[abs(sig$log2FoldChange) > lfc_thres,]
+
+  sig <- sig[rownames(sig) %in% rownames(tmpgem)]
+
+  rownames( tmpgem[match(rownames(sig), rownames(tmpgem)), ] ) <- rownames(sig)
+
+
+  }
+
+
+
+
 
   #rowlabs, if less than 75 genes then label them, if not leave blank
   if (nrow(tmpgem) >75){  row_labels =  (rep('', nrow(tmpgem))) }else{ row_labels <- rownames(tmpgem)}
