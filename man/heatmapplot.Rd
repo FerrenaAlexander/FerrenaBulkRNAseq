@@ -15,6 +15,10 @@ heatmapplot(
   change_gene_label,
   gene_label_equivalency,
   clustering_distance_columns,
+  deres,
+  pval_thres,
+  lfc_thres,
+  use_padj,
   ...
 )
 }
