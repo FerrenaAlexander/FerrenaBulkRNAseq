@@ -2,15 +2,18 @@
 
 
 # to do items
-# fix multivar formula call
 # consider saving things in the first survival function, just plotting in later funtions?
 # finalize and check again categorical variable surv
-# add in all later cunctions: summary plot, table, and forestplots
+# add in all later functions: summary plot, table, and forestplots
+
+# also, in deplots.r, make sure to check heatmapplot:
+# added suport for sig vs nonsig genes --> test it
+# need to document some of the new params in that function
 
 
 #' A function for survival analysis.
 #'
-#' An easy wrapper aroundsurvival analysis as implemented in the packages survival and survminer.
+#' An easy wrapper around survival analysis as implemented in the packages survival and survminer.
 #'
 #' @param testvardf - a data.frame of variables to test for association with survival, columns = variables, rows = observations. If you want to run a gene expression matrix, then genes need to be columns and samples need to be rows, ie you may need to transpose via the transpose function, t().
 #' @param clinvardf - a data.frame with clinical variables, including time and status columns, columns = variables, rows = observations.
@@ -132,7 +135,7 @@ survival <- function(testvardf,
                          title=scorename,
                          ggtheme = theme_classic2())
 
-      #test for trend, b ut only if >2 vars...
+      #test for trend, but only if >2 vars...
       if( length(levels(df$var)) > 2 )  {
 
 
@@ -171,7 +174,12 @@ survival <- function(testvardf,
         df <- cbind(df, clinvardf)
 
         # run it
-        multivar <- coxph(Surv(surv, status_code) ~ continuous + ajcc_pathologic_stage_RECODED + age_RECODED , data = df)
+        multivar <- coxph(as.formula(
+          paste0('Surv(surv, status_code) ~ ',
+                 paste(multivarnames, collapse = ' + '))
+        ),
+        data=df)
+
       }
 
 
@@ -329,7 +337,12 @@ survival <- function(testvardf,
         df <- cbind(df, clinvardf)
 
         # run it
-        multivar <- coxph(Surv(surv, status_code) ~ continuous + ajcc_pathologic_stage_RECODED + age_RECODED , data = df)
+        multivar <- coxph(as.formula(
+          paste0('Surv(surv, status_code) ~ ',
+                 paste(multivarnames, collapse = ' + '))
+        ),
+        data=df)
+
       }
 
 
@@ -358,7 +371,6 @@ survival <- function(testvardf,
 
 
   } # end cont var if statement.
-
 
 
 }
