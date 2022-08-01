@@ -372,5 +372,10 @@ survival <- function(testvardf,
 
   } # end cont var if statement.
 
+  outlist <- list(plotlist = plotlist,
+                  modellist = modellist,
+                  datalist = datalist)
+
+  return(outlist)
 
 }
