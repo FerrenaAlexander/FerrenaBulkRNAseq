@@ -4,7 +4,14 @@
 \alias{survival}
 \title{A function for survival analysis.}
 \usage{
-survival(testvardf, clinvardf, vartypes, multivarnames, time, status)
+survival(
+  testvardf,
+  clinvardf,
+  vartypes,
+  multivarnames,
+  timevarname,
+  statusvarname
+)
 }
 \arguments{
 \item{testvardf}{\itemize{
@@ -23,11 +30,11 @@ survival(testvardf, clinvardf, vartypes, multivarnames, time, status)
 \item a character vector. The colnames of clinvardf to include in multivariable modelling, if desired. If empty, does not perform multivar modelling.
 }}
 
-\item{time}{\itemize{
+\item{timevarname}{\itemize{
 \item a string, the colname of the column in clinvardf with time to event information.
 }}
 
-\item{status}{\itemize{
+\item{statusvarname}{\itemize{
 \item a string, the colname of the column in clinvardf with event information. The event column should be a character vector and should have the word "Censored" (capital C); ie alive/dead should be "Censored" and "Dead", event should be "Censored" and "Event".
 }}
 }

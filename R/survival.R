@@ -19,8 +19,8 @@
 #' @param clinvardf - a data.frame with clinical variables, including time and status columns, columns = variables, rows = observations.
 #' @param vartypes - a character vector of length = ncol(testvardf). Should say either "continuous" or "categorical", for each column of testvardf. If empty, will guess the vartype, continuous has >12 unique values.
 #' @param multivarnames - a character vector. The colnames of clinvardf to include in multivariable modelling, if desired. If empty, does not perform multivar modelling.
-#' @param time - a string, the colname of the column in clinvardf with time to event information.
-#' @param status - a string, the colname of the column in clinvardf with event information. The event column should be a character vector and should have the word "Censored" (capital C); ie alive/dead should be "Censored" and "Dead", event should be "Censored" and "Event".
+#' @param timevarname - a string, the colname of the column in clinvardf with time to event information.
+#' @param statusvarname - a string, the colname of the column in clinvardf with event information. The event column should be a character vector and should have the word "Censored" (capital C); ie alive/dead should be "Censored" and "Dead", event should be "Censored" and "Event".
 #'
 #' @return
 #' @export
@@ -30,8 +30,8 @@ survival <- function(testvardf,
                      clinvardf,
                      vartypes,
                      multivarnames,
-                     time,
-                     status){
+                     timevarname,
+                     statusvarname){
 
   #if( missing(vartypes) ) {lfclimit <- 15}
 
@@ -47,8 +47,12 @@ survival <- function(testvardf,
     if(length(vartypes) != ncol(testvardf)){error("vartypes is not the same length as ncol(testvardf). make sure each column is accounter for in vartypes as either 'continuous' or 'categorical', or leave vartypes blank.")}
 
     # using the vartypes, get the continuous / categorical columns
-    contvars <- testvardf[,vartypes=='continuous']
-    catvars <- testvardf[,vartypes=='categorical']
+    contvars <- testvardf[,vartypes=='continuous', drop=FALSE]
+    catvars <- testvardf[,vartypes=='categorical', drop=FALSE]
+
+    #get their names...
+    contnames <- colnames(contvars)
+    catnames <- colnames(catvars)
 
     message(' - ', ncol(contvars), ' continuous variables')
     message(' - ', ncol(catvars), ' categorical variables')
@@ -61,15 +65,15 @@ survival <- function(testvardf,
     message('\nGuessing vartypes based on continuous defined as > 12 unique values...')
 
     #get num unique values for each variable
-    num_unique_vals <- sapply(md, FUN = function(x){length(unique(x))}, simplify = T)
+    num_unique_vals <- sapply(testvardf, FUN = function(x){length(unique(x))}, simplify = T)
 
     #categorical
     catnames <- names(num_unique_vals[num_unique_vals<=12])
-    catvars <- testvardf[,catnames]
+    catvars <- testvardf[,catnames, drop=FALSE]
 
     #continuous
     contnames <- names(num_unique_vals[num_unique_vals>12])
-    contvars <- testvardf[,contnames]
+    contvars <- testvardf[,contnames, drop=FALSE]
 
     message(' - ', ncol(contvars), ' continuous variables')
     message(' - ', ncol(catvars), ' categorical variables')
@@ -84,9 +88,10 @@ survival <- function(testvardf,
   datalist <- list()
 
 
+
   #### categorical vars ####
 
-  if(ncol(catvars) > 0){
+  if( length(catnames) > 0 ){
 
     message("\nBeginning analysis for categorical variables...")
 
@@ -113,18 +118,18 @@ survival <- function(testvardf,
 
 
 
-      df <- data.frame(var = scorevec,
-                       surv = md[,time],
-                       status = md[,status])
+      datadf <- data.frame(var = scorevec,
+                           surv = clinvardf[,timevarname],
+                           status = clinvardf[,statusvarname])
 
 
       ### code status as numeric ###
       # EVENT = 1, CENSORED = 0
-      df$status_code <- ifelse(df$status == 'Censored', yes=0, no = 1)
+      datadf$status_code <- ifelse(datadf$status == 'Censored', yes=0, no = 1)
 
 
 
-      fit <- survfit(Surv(surv, status_code) ~ var, data = df)
+      fit <- surv_fit(Surv(surv, status_code) ~ var, data = datadf)
 
       gcat <- ggsurvplot(fit,
                          conf.int = F,
@@ -136,7 +141,7 @@ survival <- function(testvardf,
                          ggtheme = theme_classic2())
 
       #test for trend, but only if >2 vars...
-      if( length(levels(df$var)) > 2 )  {
+      if( length(levels(datadf$var)) > 2 )  {
 
 
 
@@ -155,7 +160,7 @@ survival <- function(testvardf,
 
       gcat <- gcat$plot
 
-      if( length(levels(df$var)) > 2 )  {
+      if( length(levels(datadf$var)) > 2 )  {
         plots <- list(gcat, gtft)
 
       } else{
@@ -164,21 +169,21 @@ survival <- function(testvardf,
 
       ### cox modelling ###
       #dich model, will match plot
-      model <- coxph(Surv(surv, status_code) ~ var, data = df)
+      model <- coxph(Surv(surv, status_code) ~ var, data = datadf)
 
 
       #multivar cox test
       if( !missing(multivarnames) ){
 
         #prep for multivar
-        df <- cbind(df, clinvardf)
+        datadf <- cbind(datadf, clinvardf)
 
         # run it
         multivar <- coxph(as.formula(
           paste0('Surv(surv, status_code) ~ ',
                  paste(multivarnames, collapse = ' + '))
         ),
-        data=df)
+        data=datadf)
 
       }
 
@@ -186,20 +191,18 @@ survival <- function(testvardf,
 
       #bind all outputs
       # models
-      models <- list(dich = dich,
-                     terc = terc,
-                     continuous = continuous,
+      models <- list(model = model,
                      multivar = multivar
       )
 
       # plots
       # plots <- list(gdich, gterc, distplots)
-      plots <- list(gdich, gterc)
+      plots <- plots
 
       #save outs
       plotlist[[scorename]] <- plots
       modellist[[scorename]] <- models
-      datalist[[scorename]] <- df
+      datalist[[scorename]] <- datadf
 
 
       setTxtProgressBar(pb, scoreidx)
@@ -215,9 +218,9 @@ survival <- function(testvardf,
   #### continuous vars ####
 
 
-  if(ncol(contvars) > 0){
+  if( length(contnames) > 0){
 
-    message("\nBeginning analysis for categorical variables...")
+    message("\nBeginning analysis for continuous variables...")
 
     #get varnames
     scorenames <- names(contvars)
@@ -227,7 +230,8 @@ survival <- function(testvardf,
     pb <- txtProgressBar(min = 0, max = total, style = 3)
 
 
-    for(scoreidx in 1:length(scorenames)) {
+    for(scoreidx in 1:length(scorenames) ) {
+
 
       #get the score name
       scorename <- colnames(contvars)[scoreidx]
@@ -252,28 +256,29 @@ survival <- function(testvardf,
 
 
 
-      ### set up survival df ###
-      df <- data.frame(continuous = scorevec,
-                       dichotomized = dichscore,
-                       terciles = terciles,
-                       surv = clinvardf[,time],
-                       status = clinvardf[,status])
+      ### set up survival datadf ###
+      datadf <- data.frame(continuous = scorevec,
+                           dichotomized = dichscore,
+                           terciles = terciles,
+                           surv = clinvardf[,timevarname],
+                           status = clinvardf[,statusvarname])
+
 
 
 
       # #check dist
       # #check dist over dead/alive
-      # hist <- ggplot(df, aes(continuous, fill=status))+
+      # hist <- ggplot(datadf, aes(continuous, fill=status))+
       #   geom_histogram(col='black',position='identity', alpha=0.5) +
       #   facet_wrap(~status, nrow=2)
       #
       # #check dist cor with survival?
       #
-      # corCensored <- cor.test(df[df$status=='Censored', "surv"], df[df$status=='Censored', "continuous"])
-      # corNonCensored <- cor.test(df[df$status!='Censored', "surv"], df[df$status!='Censored', "continuous"])
+      # corCensored <- cor.test(datadf[datadf$status=='Censored', "surv"], datadf[datadf$status=='Censored', "continuous"])
+      # corNonCensored <- cor.test(datadf[datadf$status!='Censored', "surv"], datadf[datadf$status!='Censored', "continuous"])
       # corlab <- paste0('Non-Censored cor: ', round(corNonCensored$estimate, 3), ', Non-Censored P:', round(corNonCensored$p.value, 3),
       #                  '\nCensored cor: ', round(corCensored$estimate, 3), ', Censored P: ', round(corCensored$p.value, 3))
-      # corp <- ggplot(df, aes(continuous, surv, col = status))+
+      # corp <- ggplot(datadf, aes(continuous, surv, col = status))+
       #   geom_point()+
       #   geom_smooth()+
       #   facet_wrap(~status, nrow=2)+
@@ -283,12 +288,12 @@ survival <- function(testvardf,
 
       ### code status as numeric ###
       # EVENT = 1, CENSORED = 0
-      df$status_code <- ifelse(df$status == 'Censored', yes=0, no = 1)
+      datadf$status_code <- ifelse(datadf$status == 'Censored', yes=0, no = 1)
 
 
 
       ### tertile analysis ###
-      fit <- survfit(Surv(surv, status_code) ~ terciles, data = df)
+      fit <- surv_fit(Surv(surv, status_code) ~ terciles, data = datadf)
 
       gterc <- ggsurvplot(fit,
                           conf.int = F,
@@ -302,7 +307,7 @@ survival <- function(testvardf,
 
 
       ### dichotomized analysis ###
-      fit <- survfit(Surv(surv, status_code) ~ dichotomized, data = df)
+      fit <- surv_fit(Surv(surv, status_code) ~ dichotomized, data = datadf)
 
       gdich <- ggsurvplot(fit,
                           conf.int = F,
@@ -320,13 +325,13 @@ survival <- function(testvardf,
 
       ### cox modelling ###
       #dich model, will match plot
-      dich <- coxph(Surv(surv, status_code) ~ dichotomized, data = df)
+      dich <- coxph(Surv(surv, status_code) ~ dichotomized, data = datadf)
 
       #terc
-      terc <- coxph(Surv(surv, status_code) ~ terciles, data = df)
+      terc <- coxph(Surv(surv, status_code) ~ terciles, data = datadf)
 
       #continuous univariate cox
-      continuous <- coxph(Surv(surv, status_code) ~ continuous, data = df)
+      continuous <- coxph(Surv(surv, status_code) ~ continuous, data = datadf)
 
 
 
@@ -334,14 +339,14 @@ survival <- function(testvardf,
       if( !missing(multivarnames) ){
 
         #prep for multivar
-        df <- cbind(df, clinvardf)
+        datadf <- cbind(datadf, clinvardf)
 
         # run it
         multivar <- coxph(as.formula(
           paste0('Surv(surv, status_code) ~ ',
                  paste(multivarnames, collapse = ' + '))
         ),
-        data=df)
+        data=datadf)
 
       }
 
@@ -362,7 +367,7 @@ survival <- function(testvardf,
       #save outs
       plotlist[[scorename]] <- plots
       modellist[[scorename]] <- models
-      datalist[[scorename]] <- df
+      datalist[[scorename]] <- datadf
 
 
       setTxtProgressBar(pb, scoreidx)
