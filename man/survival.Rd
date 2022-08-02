@@ -24,7 +24,7 @@ survival(
 }}
 
 \item{vartypes}{\itemize{
-\item a character vector of length = ncol(testvardf). Should say either "continuous" or "categorical", for each column of testvardf. If empty, will guess the vartype, continuous has >12 unique values.
+\item a character vector of length = ncol(testvardf). Should say either "continuous" or "categorical", for each column of testvardf. If empty, will guess the vartype, defining continuous variables as those with >12 unique values.
 }}
 
 \item{multivarnames}{\itemize{
@@ -47,9 +47,7 @@ survival(
 Does not return anything; instead, will save survival analysis plots, Cox regression models, and frozen data to outdir.
 }
 \description{
-An easy wrapper around survival analysis as implemented in the packages survival and survminer.
-}
-\details{
-This package is meant to easily facilitate survival analysis for test variables (given in testvardf), using time-to-event and event-status variables (given in clinvardf).
-It also supports multivariable modelling using other variables in clinvardf, which are called accoriding to their column names as provided by multivarnames.
+An easy wrapper around survival analysis as implemented in the packages \code{survival} and \code{survminer}.
+This package is meant to easily facilitate survival analysis for test variables (given in \code{testvardf}), using time-to-event and event-status variables (given in \code{clinvardf}).
+It also supports multivariable modelling using other variables in \code{clinvardf}, which are called according to their column names as provided by \code{multivarnames}.
 }

@@ -2,8 +2,7 @@
 
 
 # to do items
-# finish adding saving parts of the functions to the end of this
-# may need to split saving for continuous vs categorical
+# forest plots
 
 # also, in deplots.r, make sure to check heatmapplot:
 # added suport for sig vs nonsig genes --> test it
@@ -12,14 +11,13 @@
 
 #' A function for survival analysis.
 #'
-#' An easy wrapper around survival analysis as implemented in the packages survival and survminer.
-#'
-#' This package is meant to easily facilitate survival analysis for test variables (given in testvardf), using time-to-event and event-status variables (given in clinvardf).
-#' It also supports multivariable modelling using other variables in clinvardf, which are called accoriding to their column names as provided by multivarnames.
+#' An easy wrapper around survival analysis as implemented in the packages `survival` and `survminer`.
+#' This package is meant to easily facilitate survival analysis for test variables (given in `testvardf`), using time-to-event and event-status variables (given in `clinvardf`).
+#' It also supports multivariable modelling using other variables in `clinvardf`, which are called according to their column names as provided by `multivarnames`.
 #'
 #' @param testvardf - a data.frame of variables to test for association with survival, columns = variables, rows = observations. If you want to run a gene expression matrix, then genes need to be columns and samples need to be rows, ie you may need to transpose via the transpose function, t().
 #' @param clinvardf - a data.frame with clinical variables, including time and status columns, columns = variables, rows = observations.
-#' @param vartypes - a character vector of length = ncol(testvardf). Should say either "continuous" or "categorical", for each column of testvardf. If empty, will guess the vartype, continuous has >12 unique values.
+#' @param vartypes - a character vector of length = ncol(testvardf). Should say either "continuous" or "categorical", for each column of testvardf. If empty, will guess the vartype, defining continuous variables as those with >12 unique values.
 #' @param multivarnames - a character vector. The colnames of clinvardf to include in multivariable modelling, if desired. If empty, does not perform multivar modelling.
 #' @param timevarname - a string, the colname of the column in clinvardf with time to event information.
 #' @param statusvarname - a string, the colname of the column in clinvardf with event information. The event column should be a character vector and should have the word "Censored" (capital C); ie alive/dead should be "Censored" and "Dead", event should be "Censored" and "Event".
