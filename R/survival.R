@@ -495,9 +495,11 @@ survival <- function(testvardf,
       rownames <- rownames(summarytable)
 
       rownames[1:4] <- paste0('Univariate_', rownames[1:4])
+      rownames[4] <- 'Univariate_Continuous'
 
       if(length(rownames)>4){
         rownames[5:length(rownames)] <- paste0('Multivariate_', rownames[5:length(rownames)])
+        rownames[5] <- 'Multivariate_Continuous'
       }
 
       rownames(summarytable) <- rownames
