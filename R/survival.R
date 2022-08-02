@@ -215,6 +215,11 @@ survival <- function(testvardf,
 
     } # end cat var loop.
 
+
+    catvarout <- list(plotlist = plotlist,
+                      modellist = modellist,
+                      datalist = datalist)
+
   } else{catvarout <- NULL} #end cat var if statement.
 
 
@@ -241,7 +246,7 @@ survival <- function(testvardf,
     datalist <- list()
 
     # this list will wrap the cat var lists, if there are cat vars; else, NULL.
-    contvarouts <- list()
+    contvarout <- list()
 
 
     for(scoreidx in 1:length(scorenames) ) {
@@ -389,10 +394,15 @@ survival <- function(testvardf,
     } # end cont var loop.
 
 
-  } else {contvarouts <- NULL} # end cont var if statement.
+    contvarout <- list(plotlist = plotlist,
+                      modellist = modellist,
+                      datalist = datalist)
+
+
+  } else {contvarout <- NULL} # end cont var if statement.
 
   outlist <- list(categorical = catvarout,
-                  continuous = contvarouts)
+                  continuous = contvarout)
 
   return(outlist)
 
