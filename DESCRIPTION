@@ -18,7 +18,8 @@ Imports:
     patchwork,
     survival,
     survminer,
-    ComplexHeatmap
+    ComplexHeatmap,
+    gridextra
 biocViews:
     fgsea,
     ComplexHeatmap
