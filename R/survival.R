@@ -3,7 +3,6 @@
 
 # to do items
 # consider saving things in the first survival function, just plotting in later funtions?
-# finalize and check again categorical variable surv
 # add in all later functions: summary plot, table, and forestplots
 
 # also, in deplots.r, make sure to check heatmapplot:
@@ -22,7 +21,7 @@
 #' @param timevarname - a string, the colname of the column in clinvardf with time to event information.
 #' @param statusvarname - a string, the colname of the column in clinvardf with event information. The event column should be a character vector and should have the word "Censored" (capital C); ie alive/dead should be "Censored" and "Dead", event should be "Censored" and "Event".
 #'
-#' @return
+#' @return A nested list object: highest level, categorical vs continuous; below that, lists containing plots, models, and data; plotlists will contain kaplan-meier plots; models will include cox regresion models; datalists contain the data DFs, which is important for reproducibility and model diagnostics including proportional hazards testing.
 #' @export
 #'
 #' @examples
@@ -82,10 +81,7 @@ survival <- function(testvardf,
 
 
 
-  #prep output lists
-  plotlist <- list()
-  modellist <- list()
-  datalist <- list()
+
 
 
 
@@ -103,6 +99,16 @@ survival <- function(testvardf,
     total = ncol(catvars)
     pb <- txtProgressBar(min = 0, max = total, style = 3)
 
+
+    #prep output lists
+
+    #outs from loop: plots, models, data
+    plotlist <- list()
+    modellist <- list()
+    datalist <- list()
+
+    # this list will wrap the cat var lists, if there are cat vars; else, NULL.
+    catvarout <- list()
 
     for(scoreidx in 1:length(scorenames)) {
 
@@ -207,9 +213,9 @@ survival <- function(testvardf,
 
       setTxtProgressBar(pb, scoreidx)
 
-    } # end cont var loop.
+    } # end cat var loop.
 
-  }
+  } else{catvarout <- NULL} #end cat var if statement.
 
 
 
@@ -228,6 +234,14 @@ survival <- function(testvardf,
     # prep progress bar
     total = ncol(contvars)
     pb <- txtProgressBar(min = 0, max = total, style = 3)
+
+    #outs from loop: plots, models, data
+    plotlist <- list()
+    modellist <- list()
+    datalist <- list()
+
+    # this list will wrap the cat var lists, if there are cat vars; else, NULL.
+    contvarouts <- list()
 
 
     for(scoreidx in 1:length(scorenames) ) {
@@ -375,11 +389,10 @@ survival <- function(testvardf,
     } # end cont var loop.
 
 
-  } # end cont var if statement.
+  } else {contvarouts <- NULL} # end cont var if statement.
 
-  outlist <- list(plotlist = plotlist,
-                  modellist = modellist,
-                  datalist = datalist)
+  outlist <- list(categorical = catvarout,
+                  continuous = contvarouts)
 
   return(outlist)
 

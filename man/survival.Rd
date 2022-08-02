@@ -38,6 +38,9 @@ survival(
 \item a string, the colname of the column in clinvardf with event information. The event column should be a character vector and should have the word "Censored" (capital C); ie alive/dead should be "Censored" and "Dead", event should be "Censored" and "Event".
 }}
 }
+\value{
+A nested list object: highest level, categorical vs continuous; below that, lists containing plots, models, and data; plotlists will contain kaplan-meier plots; models will include cox regresion models; datalists contain the data DFs, which is important for reproducibility and model diagnostics including proportional hazards testing.
+}
 \description{
 An easy wrapper around survival analysis as implemented in the packages survival and survminer.
 }
