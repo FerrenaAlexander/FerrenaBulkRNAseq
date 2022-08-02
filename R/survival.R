@@ -15,7 +15,11 @@
 #' An easy wrapper around survival analysis as implemented in the packages survival and survminer.
 #'
 #' This package is meant to easily facilitate survival analysis for test variables (given in testvardf), using time-to-event and event-status variables (given in clinvardf).
+<<<<<<< HEAD
 #' It also supports multivariable modelling using other variables in clinvardf, which are called accoriding to their column names as provided by multivarnames.
+=======
+#' It also supports multivariable modelling using other variables in clinvardf, which are claled accoriding to their column names as provided by multivarnames.
+>>>>>>> ef65dba5680c46c291e59a401ad9fc3d1c042260
 #'
 #' @param testvardf - a data.frame of variables to test for association with survival, columns = variables, rows = observations. If you want to run a gene expression matrix, then genes need to be columns and samples need to be rows, ie you may need to transpose via the transpose function, t().
 #' @param clinvardf - a data.frame with clinical variables, including time and status columns, columns = variables, rows = observations.
