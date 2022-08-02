@@ -2,8 +2,7 @@
 
 
 # to do items
-# finish adding saving parts of the functions to the end of this
-# may need to split saving for continuous vs categorical
+# forest plot support
 
 # also, in deplots.r, make sure to check heatmapplot:
 # added suport for sig vs nonsig genes --> test it
@@ -226,7 +225,7 @@ survival <- function(testvardf,
 
         # run it
         multivar <- coxph(as.formula(
-          paste0('Surv(surv, status_code) ~ ',
+          paste0('Surv(surv, status_code) ~ continuous + ',
                  paste(multivarnames, collapse = ' + '))
         ),
         data=datadf)
@@ -361,7 +360,8 @@ survival <- function(testvardf,
         plots <- list(gcat, gtft)
 
       } else{
-        plots <- gcat
+        plots <- list( gcat, plot_spacer() )
+
       }
 
       ### cox modelling ###
@@ -377,7 +377,7 @@ survival <- function(testvardf,
 
         # run it
         multivar <- coxph(as.formula(
-          paste0('Surv(surv, status_code) ~ ',
+          paste0('Surv(surv, status_code) ~ var + ',
                  paste(multivarnames, collapse = ' + '))
         ),
         data=datadf)
@@ -429,14 +429,14 @@ survival <- function(testvardf,
   outlist <- list(continuous = contvarout,
                   categorical = catvarout)
 
-  message('\nPreparing to save outputs to: "', outdir,'"')
-  dir.create(outdir)
+  message('\n\n\nPreparing to save outputs to: "', outdir,'"')
+  dir.create(outdir, recursive = T)
 
 
 
   ### save continuous vars ###
 
-  if(is.null( outlist[[1]]) ){
+  if( ! is.null( outlist[[1]]) ){
 
 
     message('\nSaving continuous variable outputs...')
@@ -512,7 +512,7 @@ survival <- function(testvardf,
       summarytable[,-ncol(summarytable)] <- round( summarytable[,-ncol(summarytable)],3 )
 
       # plot it all together
-      updatedplot <- (plots[[1]] + plots[[2]]) / ( gridExtra::tableGrob(summarytable)) + patchwork::plot_annotation(score) +
+      updatedplot <- (plots[[1]] + plots[[2]]) / ( gridExtra::tableGrob(summarytable, theme=gridExtra::ttheme_default(base_size =8))) + patchwork::plot_annotation(score) +
         plot_layout(heights = c(1,2))
 
 
@@ -544,18 +544,21 @@ survival <- function(testvardf,
 
       gdich <- plots[[1]]
       gterc <- plots[[2]]
-      distplots <- plots[[3]]
-      suppressMessages(ggsave( paste0(resultdir, '/dist.jpg'), distplots , height = 7, width = 7))
 
-      ggsave( paste0(resultdir, '/gdich.jpg'), gdich , height = 5, width = 5)
-      ggsave( paste0(resultdir, '/gterc.jpg'), gterc , height = 5, width = 5)
+      pdf(paste0(resultdir, '/KM_dichotomized.pdf'), height = 5, width = 5)
+      print( gdich )
+      dev.off()
 
+      pdf(paste0(resultdir, '/KM_terciles.pdf'), height = 5, width = 5)
+      print( gterc )
+      dev.off()
 
       pdf(paste0(resultdir, '/summaryplot.pdf'), height = 10, width = 9)
-      updatedplot
+      print( updatedplot )
       dev.off()
 
       summarytable <- cbind(rownames(summarytable), summarytable)
+      colnames(summarytable)[1] <- 'variable'
 
       write.csv(paste0(resultdir, '/modeltable.csv'), x=summarytable, row.names = F)
 
@@ -567,16 +570,154 @@ survival <- function(testvardf,
       setTxtProgressBar(pb, scoreidx)
 
 
-  }
+    } # end cont saving loop
 
 
 
 
-  }
+  } # end cont saving if statement
+
+
+  ### save categorical vars ###
+
+  if( ! is.null( outlist[[2]]) ){
+
+
+    message('\nSaving categorical variable outputs...')
+
+    #get outputs
+    plotlist <- outlist[[2]][[1]]
+    modellist <- outlist[[2]][[2]]
+    datalist <- outlist[[2]][[3]]
+
+
+
+    sigpways <- names(plotlist)
+
+    sigresdir <- paste0(outdir, '/categoricalvars/')
+    dir.create(sigresdir)
+
+    total = length(sigpways)
+    pb <- txtProgressBar(min = 0, max = total, style = 3)
+
+
+    #for significant results, make outputs
+    pdfplotlist <- list()
+    for(scoreidx in 1:length(sigpways) ){
+
+      score <- sigpways[scoreidx]
+      #message(score)
+
+      #get models
+      models <- modellist[[score]]
+      datadf <- datalist[[score]] #load data into env or else, the diagnostics break
+
+      #get plots
+      plots <- plotlist[[score]]
+
+
+      #get the coefficients, hazard ratios, confidence intervals, and P values
+      summarytable <- bind_rows( lapply(models, function(x){as.data.frame( summary(x)$coefficients ) }) )
+      summarytable <- bind_cols(summarytable,
+                                bind_rows( lapply(models, function(x){as.data.frame( summary(x)$conf.int ) }) )[,3:4] )
 
 
 
 
-  return(outlist)
+
+
+      #rename the univar
+      # get the rows form then number of levels - 1....
+      numtestlevs <- length(levels(datadf$var)) - 1
+      rownames(summarytable)[1:numtestlevs] <- paste0('Univariate_', rownames(summarytable)[1:numtestlevs] )
+
+
+      #rename the multivar
+      # to get the rest of the rows, use numtestlevs + 1 --> all else is multivar...
+      numtestlevs <- numtestlevs + 1
+      rownames(summarytable)[numtestlevs:nrow(summarytable)] <- paste0('Multivariate_', rownames(summarytable)[numtestlevs:nrow(summarytable)] )
+
+
+      #put conf int next to coef
+      summarytable <- summarytable[,c(1,6,7,2,3,4,5)]
+
+      #hr, lower/upperCI, P, and sig only...
+      summarytable <- summarytable[,c(4,2,3,7)]
+
+
+      #add significance marks
+      summarytable$significance <- ''
+      summarytable[summarytable$`Pr(>|z|)` < 0.1, "significance"] <- '.'
+      summarytable[summarytable$`Pr(>|z|)` < 0.05, "significance"] <- '*'
+      summarytable[summarytable$`Pr(>|z|)` < 0.01, "significance"] <- '**'
+      summarytable[summarytable$`Pr(>|z|)` < 0.001, "significance"] <- '***'
+
+      #round table
+      summarytable[,-ncol(summarytable)] <- round( summarytable[,-ncol(summarytable)],3 )
+
+      # plot it all together
+      updatedplot <- (plots[[1]] + plots[[2]]) / ( gridExtra::tableGrob(summarytable, theme=gridExtra::ttheme_default(base_size =8))) + patchwork::plot_annotation(score) +
+        plot_layout(heights = c(1,2))
+
+
+      pdfplotlist[[score]] <- updatedplot
+
+
+
+      #save all outputs...
+      resultdir <- paste0(sigresdir, '/', score)
+      dir.create(resultdir)
+
+
+      # saveRDS( file = paste0(resultdir, '/models.rds'), models  )
+
+
+      #check model assumptions...
+      modeldiagnosticsfile <- paste0(resultdir, '/modeldiagnostics.pdf')
+      pdf(modeldiagnosticsfile, height = 7, width = 7)
+      for(model in models){
+
+        print( ggcoxzph( cox.zph(model) ) )
+
+      }
+      dev.off()
+
+
+      #save plots
+
+
+      gcat <- plots[[1]]
+      gtft <- plots[[2]]
+
+      pdf(paste0(resultdir, '/KM_categorical.pdf'), height = 5, width = 5)
+      print( gcat )
+      dev.off()
+
+      pdf(paste0(resultdir, '/KM_categorical_test-for-trend.pdf'), height = 5, width = 5)
+      print( gtft )
+      dev.off()
+
+      pdf(paste0(resultdir, '/summaryplot.pdf'), height = 10, width = 9)
+      print( updatedplot )
+      dev.off()
+
+      summarytable <- cbind(rownames(summarytable), summarytable)
+      colnames(summarytable)[1] <- 'variable'
+
+      write.csv(paste0(resultdir, '/modeltable.csv'), x=summarytable, row.names = F)
+
+
+      ### saveas much as possible just in case ###
+      list_to_save <- list(datadf = datadf, plots = plots, models = models)
+      saveRDS(object = list_to_save, file = paste0(resultdir, '/objects.rds') )
+
+      setTxtProgressBar(pb, scoreidx)
+
+
+    } # end cat saving loop
+
+
+  } # end cat saving if statment
+
 
 }
