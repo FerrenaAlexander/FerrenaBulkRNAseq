@@ -44,8 +44,12 @@ survival(
 }}
 }
 \value{
-A nested list object: highest level, categorical vs continuous; below that, lists containing plots, models, and data; plotlists will contain kaplan-meier plots; models will include cox regresion models; datalists contain the data DFs, which is important for reproducibility and model diagnostics including proportional hazards testing.
+Does not return anything; instead, will save survival analysis plots, Cox regression models, and frozen data to outdir.
 }
 \description{
 An easy wrapper around survival analysis as implemented in the packages survival and survminer.
+}
+\details{
+This package is meant to easily facilitate survival analysis for test variables (given in testvardf), using time-to-event and event-status variables (given in clinvardf).
+It also supports multivariable modelling using other variables in clinvardf, which are claled accoriding to their column names as provided by multivarnames.
 }

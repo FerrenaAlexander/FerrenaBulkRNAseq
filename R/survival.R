@@ -14,6 +14,9 @@
 #'
 #' An easy wrapper around survival analysis as implemented in the packages survival and survminer.
 #'
+#' This package is meant to easily facilitate survival analysis for test variables (given in testvardf), using time-to-event and event-status variables (given in clinvardf).
+#' It also supports multivariable modelling using other variables in clinvardf, which are claled accoriding to their column names as provided by multivarnames.
+#'
 #' @param testvardf - a data.frame of variables to test for association with survival, columns = variables, rows = observations. If you want to run a gene expression matrix, then genes need to be columns and samples need to be rows, ie you may need to transpose via the transpose function, t().
 #' @param clinvardf - a data.frame with clinical variables, including time and status columns, columns = variables, rows = observations.
 #' @param vartypes - a character vector of length = ncol(testvardf). Should say either "continuous" or "categorical", for each column of testvardf. If empty, will guess the vartype, continuous has >12 unique values.
@@ -22,7 +25,7 @@
 #' @param statusvarname - a string, the colname of the column in clinvardf with event information. The event column should be a character vector and should have the word "Censored" (capital C); ie alive/dead should be "Censored" and "Dead", event should be "Censored" and "Event".
 #' @param outdir - a string, the path to write outputs to; defaults to './survival'
 #'
-#' @return Does not return anything; instead, will save survival analysis outs to outdir.
+#' @return Does not return anything; instead, will save survival analysis plots, Cox regression models, and frozen data to outdir.
 #' @export
 #'
 #' @examples
