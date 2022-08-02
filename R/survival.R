@@ -191,7 +191,7 @@ survival <- function(testvardf,
         ),
         data=datadf)
 
-      }
+      } else{multivar <- NULL}
 
 
 
@@ -367,7 +367,7 @@ survival <- function(testvardf,
         ),
         data=datadf)
 
-      }
+      } else{multivar <- NULL}
 
 
 
