@@ -10,7 +10,8 @@ survival(
   vartypes,
   multivarnames,
   timevarname,
-  statusvarname
+  statusvarname,
+  outdir
 )
 }
 \arguments{
@@ -36,6 +37,10 @@ survival(
 
 \item{statusvarname}{\itemize{
 \item a string, the colname of the column in clinvardf with event information. The event column should be a character vector and should have the word "Censored" (capital C); ie alive/dead should be "Censored" and "Dead", event should be "Censored" and "Event".
+}}
+
+\item{outdir}{\itemize{
+\item a string, the path to write outputs to; defaults to './survival'
 }}
 }
 \value{

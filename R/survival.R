@@ -2,7 +2,8 @@
 
 
 # to do items
-# forest plot support
+# finish adding saving parts of the functions to the end of this
+# may need to split saving for continuous vs categorical
 
 # also, in deplots.r, make sure to check heatmapplot:
 # added suport for sig vs nonsig genes --> test it
@@ -21,7 +22,7 @@
 #' @param statusvarname - a string, the colname of the column in clinvardf with event information. The event column should be a character vector and should have the word "Censored" (capital C); ie alive/dead should be "Censored" and "Dead", event should be "Censored" and "Event".
 #' @param outdir - a string, the path to write outputs to; defaults to './survival'
 #'
-#' @return A nested list object: highest level, categorical vs continuous; below that, lists containing plots, models, and data; plotlists will contain kaplan-meier plots; models will include cox regresion models; datalists contain the data DFs, which is important for reproducibility and model diagnostics including proportional hazards testing.
+#' @return Does not return anything; instead, will save survival analysis outs to outdir.
 #' @export
 #'
 #' @examples
@@ -242,6 +243,9 @@ survival <- function(testvardf,
                      multivar = multivar
       )
 
+      #drop null list; this happens if no multivar was used.
+      models <- models[lengths(models) != 0]
+
       # plots
       # plots <- list(gdich, gterc, distplots)
       plots <- list(gdich, gterc)
@@ -392,6 +396,9 @@ survival <- function(testvardf,
                      multivar = multivar
       )
 
+      #drop null list; this happens if no multivar was used.
+      models <- models[lengths(models) != 0]
+
       # plots
       # plots <- list(gdich, gterc, distplots)
       plots <- plots
@@ -480,18 +487,16 @@ survival <- function(testvardf,
 
 
 
-
-      #only plot if significant...
-      # ignore met
-      # pvals <- summarytable$`Pr(>|z|)`[-(nrow(summarytable))]
-      # if( !any(pvals < 0.10) ){
-      #   next
-      # }
-      # this is defined by sigpways, not necessary
-
       #rename the continuous
+      # if onyl one match, then use uniariate (this is the case if no multivar was used)
       rownames <- rownames(summarytable)
-      rownames[grepl('^continuous', rownames)] <- c('Univariable\nContinuous', 'Multivariable\nContinuous')
+
+      if( length(grep('^continuous', rownames, value = T)) == 1 ){
+        rownames[grepl('^continuous', rownames)] <- 'Univariable\nContinuous'
+      } else{
+        rownames[grepl('^continuous', rownames)] <- c('Univariable\nContinuous', 'Multivariable\nContinuous')
+      }
+
       rownames(summarytable) <- rownames
 
       #put conf int next to coef
@@ -633,10 +638,12 @@ survival <- function(testvardf,
 
 
       #rename the multivar
+      # check if multivar even exists: nrow will be greater than numtestlevs
       # to get the rest of the rows, use numtestlevs + 1 --> all else is multivar...
-      numtestlevs <- numtestlevs + 1
-      rownames(summarytable)[numtestlevs:nrow(summarytable)] <- paste0('Multivariate_', rownames(summarytable)[numtestlevs:nrow(summarytable)] )
-
+      if(nrow(summarytable) > numtestlevs ){
+        numtestlevs <- numtestlevs + 1
+        rownames(summarytable)[numtestlevs:nrow(summarytable)] <- paste0('Multivariate_', rownames(summarytable)[numtestlevs:nrow(summarytable)] )
+      }
 
       #put conf int next to coef
       summarytable <- summarytable[,c(1,6,7,2,3,4,5)]
