@@ -581,9 +581,9 @@ survival <- function(testvardf,
     } # end cont saving loop
 
 
+    pdfplotlist_cont <- pdfplotlist
 
-
-  } # end cont saving if statement
+  } else{pdfplotlist_cont <- NULL} # end cont saving if statement
 
 
   ### save categorical vars ###
@@ -726,8 +726,432 @@ survival <- function(testvardf,
 
     } # end cat saving loop
 
+    pdfplotlist_cat <- pdfplotlist
 
-  } # end cat saving if statment
+  } else{pdfplotlist_cat <- NULL} # end cat saving if statement
 
+
+
+  # summaryfiles:
+  # forestplots;
+  # summaryplots and tables
+
+  summaryplotdir <- paste0(outdir, '/summaryplots')
+
+  message('\n\n\nSaving summary plots to: "', summaryplotdir,'"')
+  dir.create(summaryplotdir, recursive = T)
+
+
+  if( ! is.null( outlist[[1]]) ){
+
+    #forestplots for dich; cont; and multivar
+
+    #get outputs
+    plotlist <- outlist[[1]][[1]]
+    modellist <- outlist[[1]][[2]]
+    datalist <- outlist[[1]][[3]]
+
+
+
+    forest_univar <- internal_forestplot_continuous_univar(modellist)
+    forest_dich <- internal_forestplot_continuous_dich(modellist)
+
+
+    if(length(modellist[[1]])==4){
+      forest_multivar <- internal_forestplot_continuous_multivar(modellist)
+    }
+
+
+
+    pdf(  paste0(summaryplotdir, '/summary_continuousvars.pdf')  )
+    print( forest_univar )
+    print( forest_dich )
+    if(length(modellist[[1]])==4){ print( forest_multivar ) }
+    print( pdfplotlist_cont )
+
+    suppressMessages(dev.off())
+
+
+  }
+
+  if( ! is.null( outlist[[2]]) ){
+
+    #get outputs
+    plotlist <- outlist[[2]][[1]]
+    modellist <- outlist[[2]][[2]]
+    datalist <- outlist[[2]][[3]]
+
+
+    forest_cat_univar <- internal_forestplot_categorical_univar(modellist)
+
+    if(length(modellist[[1]])==2){
+      forest_cat_multivar <- internal_forestplot_categorical_multivar(modellist)
+    }
+
+
+    pdf(  paste0(summaryplotdir, '/summary_categoricalvar.pdf')  )
+    print( forest_cat_univar )
+    if(length(modellist[[1]])==2){ print ( forest_cat_multivar ) }
+    print( pdfplotlist_cat )
+
+    suppressMessages(dev.off())
+
+  }
+
+  message('\nAll done!')
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##### internal functions #####
+
+### fix long names function
+#' Fix long strongs.
+#'
+#' Long strings may contain groups of words separated by underscores or other characters, such as pathway names. This function will try to cut the string in half, replacing the delimiter character closest to the middle of the string with a new-line. Good for plottng things.
+#'
+#' @param pnames character vector containing strings with long names. If longer than `threshold` characters, will split in half.
+#' @param delimiter string. the character separating words in the strings in pnames. default = '_'
+#' @param threshold integer. strings of length > threshold are cut in half with a new-line at the `delimiter` closest to the center of the string.
+#'
+#' @return
+#' @export
+#'
+#' @examples
+fixlongnames <- function(pnames, delimiter, threshold){
+
+  if(missing(delimiter)){delimiter <- '_'}
+  if(missing(threshold)){threshold <- 50}
+
+  pnewnames <- c()
+  for(p in pnames){
+
+
+    if(str_length(p) > threshold){
+
+      #try to find and replace underscore closest to halfway...
+      halfway <- round(str_length(p)/2)
+      underscorepos <- str_locate_all(p, delimiter)[[1]][,1]
+
+      distances <- abs(halfway-underscorepos)
+
+      which_und_is_closest <- which.min(distances)
+
+      split <- str_split_fixed(p, delimiter,Inf)
+
+      newp <- paste0(paste(split[1,1:which_und_is_closest], collapse = delimiter),
+                     '        ', '\n',
+                     paste(split[1,(which_und_is_closest+1):ncol(split)], collapse = delimiter)
+      )
+
+
+
+    } else{newp <- p}
+
+    pnewnames <- c(pnewnames, newp)
+
+  }
+
+  pnewnames
+}
+
+
+
+
+
+internal_forestplot_continuous_univar <- function(modellist){
+  ### check the hazard ratios ###
+
+
+  #univar first
+  univarlist <- list()
+  for(score in names(modellist) ){
+    summx <- summary(modellist[[score]]$continuous)
+    univar <- as.data.frame(summx$conf.int)
+    univar$p <- summx$coefficients[,5]
+    colnames(univar) <- c('HR', 'hrneg', 'lower95', 'upper95', 'p')
+    univar<- data.frame(score=score,univar, row.names = NULL)
+    univarlist[[score]]  <- univar
+  }
+  resdf <- dplyr::bind_rows(univarlist)
+
+  resdf$score_rename <- fixlongnames(resdf$score)
+
+
+  #if more than 30, keep only 30 most significant on each side
+  # no filtering for genes...
+  resdf <- resdf[order(resdf$p),]
+
+  #sort by HR
+  resdf <- resdf[order(resdf$HR),]
+
+  #significance...
+  resdf$test <- ifelse(resdf$p < 0.05, 'significant', 'non-sig')
+  resdf$test <- factor(resdf$test, levels = c('non-sig', 'significant'))
+
+  # color...
+  resdf$testcolor <- ifelse(resdf$test == 'significant', yes="#66C2A5", no = "#FC8D62")
+
+  #factorize..
+  resdf$score_rename <- factor(resdf$score_rename, levels=resdf$score_rename)
+
+  forestunivar <- ggplot(resdf, aes(y = score_rename, x = HR, xmin=lower95, xmax=upper95, col = test))+
+    geom_pointrange()+
+    geom_vline(xintercept = 1, linetype = 'dashed')+
+    theme_linedraw()+
+    theme(axis.text.y = element_text(size = 7),
+          axis.title.y = element_blank() )+
+    # scale_color_manual(values=resdf$testcolor)+
+    labs(title = 'HR Forest plot, univariate continuous')+
+    xlab('Hazard Ratio\nLeft = better survival ; Right = worse survival')
+
+  forestunivar
+
+}
+
+
+internal_forestplot_continuous_dich <- function(modellist){
+
+  #hazard ratios for dich
+
+  ### check the hazard ratios ###
+  dichlist <- list()
+  for(score in names(modellist) ){
+    summx <- summary(modellist[[score]]$dich)
+    dich <- as.data.frame(summx$conf.int)
+    dich$p <- summx$coefficients[,5]
+    colnames(dich) <- c('HR', 'hrneg', 'lower95', 'upper95', 'p')
+    dich<- data.frame(score=score,dich, row.names = NULL)
+    dichlist[[score]]  <- dich
+  }
+  resdf <- dplyr::bind_rows(dichlist)
+
+  resdf$score_rename <- fixlongnames(resdf$score)
+
+
+  #if more than 30, keep only 30 most significant on each side
+
+
+  # if(nrow(resdf>30)){
+  #   resdf <- resdf[order(resdf$p),]
+  #   up <- resdf[resdf$HR>1,] ; down <- resdf[resdf$HR<1,]
+  #   up <- up[up$p < 0.05,] ; down <- down[down$p < 0.05,]
+  #
+  #   resdf <- rbind(up,down)
+  # }
+
+
+  #sort by HR
+  resdf <- resdf[order(resdf$HR),]
+
+  #if more than 30, keep only 30 strongest...
+  # if(nrow(resdf) > 30){
+  #   resdf <- rbind( head(resdf, 15), tail(resdf, 15))
+  # }
+
+
+  #significance...
+  resdf$test <- ifelse(resdf$p < 0.05, 'significant', 'non-sig')
+  resdf$test <- factor(resdf$test, levels = c('non-sig', 'significant'))
+
+  # color...
+  resdf$testcolor <- ifelse(resdf$test == 'significant', yes="#66C2A5", no = "#FC8D62")
+
+  #factorize..
+  resdf$score_rename <- factor(resdf$score_rename, levels=resdf$score_rename)
+
+  forestdich <- ggplot(resdf, aes(y = score_rename, x = HR, xmin=lower95, xmax=upper95, col=test))+
+    geom_pointrange()+
+    geom_vline(xintercept = 1, linetype = 'dashed')+
+    theme_linedraw()+
+    theme(axis.text.y = element_text(size = 7),
+          axis.title.y = element_blank() )+
+    # scale_color_manual(values=resdf$testcolor)+
+    labs(title = 'HR Forest plot, dichotomized')+
+    xlab('Hazard Ratio\nLeft = better survival ; Right = worse survival')
+
+  forestdich
+
+}
+
+
+internal_forestplot_continuous_multivar <- function(modellist){
+
+  #hazard ratios for res
+
+  ### check the hazard ratios ###
+  reslist <- list()
+  for(score in names(modellist) ){
+    summx <- summary(modellist[[score]]$multivar)
+    res <- as.data.frame(summx$conf.int)['continuous',]
+    res$p <- summx$coefficients[,5]['continuous']
+    colnames(res) <- c('HR', 'hrneg', 'lower95', 'upper95', 'p')
+    res<- data.frame(score=score,res, row.names = NULL)
+    reslist[[score]]  <- res
+  }
+  resdf <- dplyr::bind_rows(reslist)
+
+  resdf$score_rename <- fixlongnames(resdf$score)
+
+
+  #if more than 30, keep only 30 most significant on each side
+
+
+  # if(nrow(resdf>30)){
+  #   resdf <- resdf[order(resdf$p),]
+  #   up <- resdf[resdf$HR>1,] ; down <- resdf[resdf$HR<1,]
+  #   up <- up[up$p < 0.05,] ; down <- down[down$p < 0.05,]
+  #
+  #   resdf <- rbind(up,down)
+  # }
+
+
+  #sort by HR
+  resdf <- resdf[order(resdf$HR),]
+
+  #if more than 30, keep only 30 strongest...
+  # if(nrow(resdf) > 30){
+  #   resdf <- rbind( head(resdf, 15), tail(resdf, 15))
+  # }
+
+
+  #significance...
+  resdf$test <- ifelse(resdf$p < 0.05, 'significant', 'non-sig')
+  resdf$test <- factor(resdf$test, levels = c('non-sig', 'significant'))
+
+  # color...
+  resdf$testcolor <- ifelse(resdf$test == 'significant', yes="#66C2A5", no = "#FC8D62")
+
+  #factorize..
+  resdf$score_rename <- factor(resdf$score_rename, levels=resdf$score_rename)
+
+  forestres <- ggplot(resdf, aes(y = score_rename, x = HR, xmin=lower95, xmax=upper95, col=test))+
+    geom_pointrange()+
+    geom_vline(xintercept = 1, linetype = 'dashed')+
+    theme_linedraw()+
+    theme(axis.text.y = element_text(size = 7),
+          axis.title.y = element_blank() )+
+    # scale_color_manual(values=resdf$testcolor)+
+    labs(title = 'HR Forest plot, multivariable continuous')+
+    xlab('Hazard Ratio\nLeft = better survival ; Right = worse survival')
+
+  forestres
+
+}
+
+
+
+
+
+
+internal_forestplot_categorical_univar <- function(modellist){
+
+  #hazard ratios for res
+
+  ### check the hazard ratios ###
+  reslist <- list()
+  for(score in names(modellist) ){
+    summx <- summary(modellist[[score]]$model)
+    res <- as.data.frame(summx$conf.int)
+    res$p <- summx$coefficients[,5]
+
+    colnames(res) <- c('HR', 'hrneg', 'lower95', 'upper95', 'p')
+    res<- data.frame(score=score,level=rownames(res), res, row.names = NULL)
+    reslist[[score]]  <- res
+  }
+  resdf <- dplyr::bind_rows(reslist)
+
+  resdf$score_rename <- fixlongnames(resdf$score)
+
+
+  #significance...
+  resdf$test <- ifelse(resdf$p < 0.05, 'significant', 'non-sig')
+  resdf$test <- factor(resdf$test, levels = c('non-sig', 'significant'))
+
+  # color...
+  resdf$testcolor <- ifelse(resdf$test == 'significant', yes="#66C2A5", no = "#FC8D62")
+
+  #factorize..
+  # resdf$score_rename <- factor(resdf$score_rename, levels=resdf$score_rename)
+
+  forestres <- ggplot(resdf, aes(y = level, x = HR, xmin=lower95, xmax=upper95, col=test))+
+    geom_pointrange()+
+    geom_vline(xintercept = 1, linetype = 'dashed')+
+    facet_wrap(~score_rename, ncol=1, scales='free_y')+
+    theme_linedraw()+
+    theme(axis.text.y = element_text(size = 7),
+          axis.title.y = element_blank() )+
+    # scale_color_manual(values=resdf$testcolor)+
+    labs(title = 'HR Forest plot, categorical')+
+    xlab('Hazard Ratio\nLeft = better survival ; Right = worse survival')
+
+
+  forestres
+
+}
+
+
+internal_forestplot_categorical_multivar <- function(modellist){
+
+  #hazard ratios for res
+
+  ### check the hazard ratios ###
+  reslist <- list()
+  for(score in names(modellist) ){
+    summx <- summary(modellist[[score]]$multivar)
+    res <- as.data.frame(summx$conf.int)
+    res$p <- summx$coefficients[,5]
+
+    # make sure to select just the multivar ones of interest...
+    # it will start with var, and alos will have a \n in it...
+    res <- res[grepl('^var', rownames(res)),]
+    res <- res[grepl('\nN', rownames(res)),]
+
+    colnames(res) <- c('HR', 'hrneg', 'lower95', 'upper95', 'p')
+    res<- data.frame(score=score,level=rownames(res), res, row.names = NULL)
+    reslist[[score]]  <- res
+  }
+  resdf <- dplyr::bind_rows(reslist)
+
+  resdf$score_rename <- fixlongnames(resdf$score)
+
+
+  #significance...
+  resdf$test <- ifelse(resdf$p < 0.05, 'significant', 'non-sig')
+  resdf$test <- factor(resdf$test, levels = c('non-sig', 'significant'))
+
+  # color...
+  resdf$testcolor <- ifelse(resdf$test == 'significant', yes="#66C2A5", no = "#FC8D62")
+
+  #factorize..
+  # resdf$score_rename <- factor(resdf$score_rename, levels=resdf$score_rename)
+
+  forestres <- ggplot(resdf, aes(y = level, x = HR, xmin=lower95, xmax=upper95, col=test))+
+    geom_pointrange()+
+    geom_vline(xintercept = 1, linetype = 'dashed')+
+    facet_wrap(~score_rename, ncol=1, scales='free_y')+
+    theme_linedraw()+
+    theme(axis.text.y = element_text(size = 7),
+          axis.title.y = element_blank() )+
+    # scale_color_manual(values=resdf$testcolor)+
+    labs(title = 'HR Forest plot, multivariable categorical')+
+    xlab('Hazard Ratio\nLeft = better survival ; Right = worse survival')
+
+
+  forestres
+
+}
+
