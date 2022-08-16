@@ -2,7 +2,8 @@
 
 
 # to do items
-# forest plots
+# customizable forest plots
+# add in a limit on how many plots to save in summary: if running thousands, only top 30 significant...?
 
 # also, in deplots.r, make sure to check heatmapplot:
 # added suport for sig vs nonsig genes --> test it
