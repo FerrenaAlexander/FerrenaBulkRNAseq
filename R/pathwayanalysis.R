@@ -9,6 +9,15 @@
 
 #### pathway analysis, clusterprofiler wrapper ####
 
+#' Run Overrepresentation Analysis via the ClusterProfiler workflow
+#'
+#' @param sigres data.frame of significant genes. first column is gene names; second column is logfoldchange or other effect size; third column is Pvalue (adusted is best)
+#' @param term2gene data.frame of pathways to check. first column is pathways, second column is genes.
+#'
+#' @return a list object: first element is a ClusterProfiler object; second element is an "emap plot", a graph of pathways connected by jaccard similarity; third element is a data.frame with the connected nodes from the emap plot; 4th element is a list of pathways in each connected cluster.
+#' @export
+#'
+#' @examples
 pathwayanalysis <- function(sigres,
                             term2gene){
 
@@ -256,24 +265,37 @@ pathwayanalysis <- function(sigres,
 
 
 
-wordcloud_pathways <- function(pways, excludeWords, ...){
+#' A fast way to make a wordcloud from a character vector of pathway names
+#'
+#'
+#' @param pways character vector. pathways to make a wordcloud with. or, more generally, a vector of "documents" with words separated by some delimiter.
+#' @param delimiter a single character string. delimiter separating words in each of the elements of the vector `pways`
+#' @param excludeWords words to exlude; for example, "GOBP"
+#' @param ... other arguments passed on to `wordcloud::wordcloud()`
+#'
+#' @return a wordcloud  as a `recordedplot` plot object.
+#' @export
+#'
+#' @examples
+wordcloud_pathways <- function(pways, delimiter, excludeWords, ...){
 
   #credit to http://www.sthda.com/english/wiki/word-cloud-generator-in-r-one-killer-function-to-do-everything-you-need
   # for basic source code and to help understand corpus object class
 
   if(missing(excludeWords)){excludeWords <- NULL}
+  if(missing(delimiter)){delimiter <- '_'}
 
   #replace underscores with spaces
-  pways <- gsub('_',' ', pways)
+  pways <- gsub(delimiter,' ', pways)
 
   #format as corpus
   pways <- tm::Corpus(tm::VectorSource(pways))
 
   #remove unneeded words
-  pways <- tm::tm_map(pways, removeWords, excludeWords)
+  pways <- tm::tm_map(pways, tm::removeWords, excludeWords)
 
   #remove whitespaces?
-  pways <- tm::tm_map(pways, stripWhitespace)
+  pways <- tm::tm_map(pways, tm::stripWhitespace)
 
   # wordcloud::wordcloud(pways
   #                      , scale=c(5,0.5)     # Set min and max scale
@@ -285,11 +307,23 @@ wordcloud_pathways <- function(pways, excludeWords, ...){
 
   wordcloud::wordcloud(pways, ...)
 
+  recordPlot()
+
 }
 
 
 
 
+#' Relabel some pathway clusters with biologically relevant names
+#'
+#' @param pathwayanalysis_out output of the `pathwayanalysis` function.
+#' @param clusterlabels character vector; labels to give to the clusters of pathways
+#' @param clusters_to_label vector of integers; which clusters to re-name.
+#'
+#' @return will return a list, similar in format to the output of `pathwayanalysis` function, but with updated cluster labels in element 3.
+#' @export
+#'
+#' @examples
 pathwayanalysis_relabel_significant_clusters <- function(pathwayanalysis_out,
                                                          clusterlabels,
                                                          clusters_to_label){
