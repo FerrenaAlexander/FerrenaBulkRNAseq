@@ -3,18 +3,25 @@
 
 # finish off:
 # left off from venn diagram
-# make the wordcloud save as a list object? ie, https://stackoverflow.com/questions/29583849/save-a-plot-in-an-object
 
+# add dependencies to description:
+# tm, wordcloud, clusterprofiler, enrichplot, ggnewscale(?); others?
+
+# survival analysis: forest plots
+
+# also, in deplots.r, make sure to check heatmapplot:
+# added suport for sig vs nonsig genes --> test it
+# need to document some of the new params in that function
 
 
 #### pathway analysis, clusterprofiler wrapper ####
 
 #' Run Overrepresentation Analysis via the ClusterProfiler workflow
 #'
-#' @param sigres data.frame of significant genes. first column is gene names; second column is logfoldchange or other effect size; third column is Pvalue (adusted is best)
+#' @param sigres data.frame of significant genes. first column is gene names; second column is logfoldchange or other effect size.
 #' @param term2gene data.frame of pathways to check. first column is pathways, second column is genes.
 #'
-#' @return a list object: first element is a ClusterProfiler object; second element is an "emap plot", a graph of pathways connected by jaccard similarity; third element is a data.frame with the connected nodes from the emap plot; 4th element is a list of pathways in each connected cluster.
+#' @return a list object: first element is a ClusterProfiler object; second element is an "emap plot", a graph of pathways connected by jaccard similarity; third element is a data.frame with the connected nodes from the emap plot; 4th element is a list of pathways in each connected cluster; 5th element is genes from the pathways in each cluster
 #' @export
 #'
 #' @examples
@@ -38,7 +45,13 @@ pathwayanalysis <- function(sigres,
   message('\nPrepping emapplots...')
 
   #run termsimilarity
+  # use all significant?
+  # sigtab <- table(msigdb_ora@result$p.adjust < 0.05)
+  # msigdb_ora <- enrichplot::pairwise_termsim(msigdb_ora, showCategory = sigtab['TRUE'] )
+
+  #go with default, use onyl top 200
   msigdb_ora <- enrichplot::pairwise_termsim(msigdb_ora)
+
 
   #try to plot color = num genes in overexp gene list?
   msigdb_ora@result$Percent_of_DEGs <- (msigdb_ora@result$Count / nrow(sigres))*100
@@ -258,14 +271,48 @@ pathwayanalysis <- function(sigres,
 
   clustpercs <- bind_rows(clustpercs)
 
+  #remove empty rows... not sure why these are a thing
+  clustpercs <- clustpercs[clustpercs$num_genes>0,]
 
-  output <- list(msigdb_ora, emap_total, clustpercs, reslist)
+
+  #add cluster info to obj metadata
+  #names(reslist) <- clustpercs$relabel
+  pwayclust <- unlist2(reslist)
+  pwayclust <- data.frame(Cluster=names(pwayclust),
+                          ID = pwayclust)
+
+  #add in names and %
+  pwayclust$PercDEGs <- clustpercs[match(pwayclust$Cluster, clustpercs$clust ),'perc']
+
+  #add clustering info to object res
+  pwayres <- msigdb_ora@result
+  pwayres <- pwayres[pwayres$ID %in% pwayclust$ID,]
+  pwayres$Cluster <- pwayclust[match(pwayres$ID, pwayclust$ID), 'Cluster']
+  pwayres$Percent_of_DEGs_CLUSTER <- pwayclust[match(pwayclust$ID, pwayres$ID), "PercDEGs"]
+
+
+
+  #match to add into the msigdb_ora res
+  msigdb_ora@result$Cluster <- NA ; msigdb_ora@result$Percent_of_DEGs_CLUSTER <- NA
+  msigdb_ora@result[match(pwayres$ID, msigdb_ora@result$ID),] <- pwayres
+
+
+  output <- list(msigdb_ora_object = msigdb_ora,
+                 plots = list(emap_noclusters = emap_total),
+                 cluster_percentages = clustpercs,
+                 pathways_in_each_cluster = reslist,
+                 genes_in_each_cluster = clustgeneslist)
+
+  output
 
 }
 
 
 
 #' A fast way to make a wordcloud from a character vector of pathway names
+#'
+#' This will make a wordcloud based on a character vector of pathway names.
+#' If using with the rest of the pathway analysis pipeline, see the example below.
 #'
 #'
 #' @param pways character vector. pathways to make a wordcloud with. or, more generally, a vector of "documents" with words separated by some delimiter.
@@ -276,8 +323,16 @@ pathwayanalysis <- function(sigres,
 #' @return a wordcloud  as a `recordedplot` plot object.
 #' @export
 #'
-#' @examples
-wordcloud_pathways <- function(pways, delimiter, excludeWords, ...){
+#' @examples #get pathways: pathwayanalysis_out[[4]] #from pathwayanalysis function
+#' get wordcloud:
+#' wc <- wordcloud_pathways(pways, excludeWords = c('GOBP', 'REGULATION', 'CELL'),
+#' scale=c(3,0.3), random.order=F, random.color=F,
+#' colors= RColorBrewer::brewer.pal(8, "Dark2"))
+#'
+#'
+#'
+#'
+pathwayanalysis_wordcloud <- function(pways, delimiter, excludeWords, ...){
 
   #credit to http://www.sthda.com/english/wiki/word-cloud-generator-in-r-one-killer-function-to-do-everything-you-need
   # for basic source code and to help understand corpus object class
@@ -313,30 +368,391 @@ wordcloud_pathways <- function(pways, delimiter, excludeWords, ...){
 
 
 
+#' Declare significant clusters in the output of pathway analysis function.
+#'
+#' Set the signficant clusters in the pathwayanalysis_out object. Will return an updated version of pathwayanalysis_out[[3]] object with significance (T/F)
+#'
+#' @param pathwayanalysis_out the output of pathwayanalysis function
+#' @param sigclusts vector of integers. the rows in pathwayanalysis_out[[3]] to use as significant clusters. If not provided, will declare clusters with > 10% of DEGs as significant.
+#'
+#' @return an updated pathwayanalysis_out object.
+#' @export
+#'
+#' @examples
+pathwayanalysis_declare_significant_clusters <- function(pathwayanalysis_out, sigclusts){
+
+  clustpercs <- pathwayanalysis_out[[3]]
+
+  if(missing(sigclusts)){
+    #just check any above 10%?
+    # get percents for the top clusters
+
+    message('Setting significant clusters as clusters with > 10% of DEGs')
+
+    clustpercs$significant <- F
+    clustpercs[clustpercs$perc>=10, "significant"] <- T
+
+  } else{
+
+    message('Using manually set significant clusters')
+
+    clustpercs$significant <- F
+    clustpercs[sigclusts,"significant"] <- T
+  }
+
+
+
+
+  pathwayanalysis_out[[3]] <- clustpercs
+
+  pathwayanalysis_out
+
+
+}
+
+
 
 #' Relabel some pathway clusters with biologically relevant names
 #'
-#' @param pathwayanalysis_out output of the `pathwayanalysis` function.
-#' @param clusterlabels character vector; labels to give to the clusters of pathways
-#' @param clusters_to_label vector of integers; which clusters to re-name.
+#' Pathways often share overlap in their genes, which are identified in this pipeline as clusters. Typically, pathways will group together as a "functional module" that can be identified based on literature and biological knowledge, so this function labels the clusters as such. This is usually kind of difficult and takes some time inspecting genes and pathway names/descriptions in each cluster.
 #'
-#' @return will return a list, similar in format to the output of `pathwayanalysis` function, but with updated cluster labels in element 3.
+#' @param pathwayanalysis_out output from the `pathwayanalysis()` function.
+#' @param clusterlabels character vector; labels to give to the clusters of pathways. If null, will use generic names.
+#'
+#' @return will return a list, similar in format to the output of `pathwayanalysis` function, but with updated object in element 1 and cluster labels in element 3.
 #' @export
 #'
 #' @examples
 pathwayanalysis_relabel_significant_clusters <- function(pathwayanalysis_out,
-                                                         clusterlabels,
-                                                         clusters_to_label){
+                                                         clusterlabels){
 
+
+
+
+  msigdb_ora <- pathwayanalysis_out[[1]]
+  clustpercs <- pathwayanalysis_out[[3]]
+  reslist <- pathwayanalysis_out[[4]]
+  clustgeneslist <- pathwayanalysis_out[[5]]
+
+  #make sure clustpercs has significant clusters
+  if( !('significant' %in% colnames(clustpercs)) ){
+
+    stop('No significant clusters found, please run pathwayanalysis_declare_significant_clusters() function')
+  }
+
+
+  if(missing(clusterlabels) ){
+    warning('No cluster labels provided;\nWill default to generic labels from significant clusters')
+    clusterlabels <- clustpercs[clustpercs$significant==T,'clust']
+  }
+
+  #relabel significant with the names
+  clustpercs$relabel <- clustpercs$clust
+  clustpercs[clustpercs$significant==T,'relabel'] <- clusterlabels
+
+  # add percent of degs to each cluster name
+  clustpercs$relabel <- paste0(clustpercs$relabel, '\n', round(clustpercs$perc, 1), ' % of DEGs')
+
+
+
+
+  #add to obj
+  sigclusts <- clustpercs[clustpercs$significant == T,]
+
+  # get pathways in the top clusters
+  sigclustpways <- reslist[names(reslist) %in% sigclusts$clust]
+  names(sigclustpways) <- sigclusts$relabel
+
+  # get pathwyas in top clusters as a df
+  sigclustpwaysdf <- bind_rows( lapply(1:length(sigclustpways), function(x){
+    i=sigclustpways[[x]]
+    name=names(sigclustpways)[x]
+    data.frame(pways=i, clust=name)
+  })
+  )
+
+
+  msigdb_ora@result$ClusterMain <- NA
+  msigdb_ora@result[match(sigclustpwaysdf$pways, msigdb_ora@result$ID),'ClusterMain'] <- sigclustpwaysdf$clust
+
+
+  pathwayanalysis_out[[1]] <- msigdb_ora
+  pathwayanalysis_out[[3]] <- clustpercs
+
+
+  pathwayanalysis_out
+
+}
+
+
+
+
+
+
+
+#' Make a Venn Diagram with genes from the significant clusters.
+#'
+#' Please run `pathwayanalysis_declare_significant_clusters` first.
+#'
+#'
+#' @param pathwayanalysis_out the output of the pathwayanalysis function.
+#'
+#' @return
+#' @export
+#'
+#' @examples
+pathwayanalysis_venn <- function(pathwayanalysis_out){
 
 
   clustpercs <- pathwayanalysis_out[[3]]
+  reslist <- pathwayanalysis_out[[4]]
+  clustgeneslist <- pathwayanalysis_out[[5]]
 
-  clustpercs$relabel <- clustpercs$clust
-  clustpercs[clusters_to_label,'relabel'] <- clusterlabels
-  clustpercs$relabel <- paste0(clustpercs$relabel, '\n', round(clustpercs$perc, 1), ' % of DEGs')
+  #make sure clustpercs has significant clusters
+  if( !('significant' %in% colnames(clustpercs)) ){
 
-  pathwayanalysis_out[[3]] <- clustpercs
+    stop('No significant clusters found, please run pathwayanalysis_declare_significant_clusters() function')
+  }
+
+  #make sure clustpercs has significant clusters
+  if( !('relabel' %in% colnames(clustpercs)) ){
+
+    stop('Informative cluster names not found, please run pathwayanalysis_relabel_significant_clusters() function')
+  }
+
+
+
+  sigclusts <- clustpercs[clustpercs$significant == T,]
+
+  # get actuaal genes of the top clusters
+  sigclustgenes <- clustgeneslist[names(clustgeneslist) %in% sigclusts$clust]
+  names(sigclustgenes) <- sigclusts$relabel
+
+  # venn of significant clusters
+  sig_venn <- ggVennDiagram::ggVennDiagram(sigclustgenes)+
+    labs(title = 'Venn Diagram of genes from top clusters of enriched pathways')+
+    theme(plot.title = element_text(hjust = 0.5))+
+    scale_x_continuous(expand = expansion(mult = .2))
+
+  sig_venn
+
+
+}
+
+
+
+
+#' Add more emapplots (graph plots with edges between similar pathways) containing cluster info.
+#'
+#' @param pathwayanalysis_out output from the `pathwayanalysis()` function.
+#' @param palette character vector of colors to use (hex codes)
+#'
+#' @return updated `pathwayanalysis_out` object with plots added to `pathwayanalysis_out[[2]]`
+#' @export
+#'
+#' @examples
+pathwayanalysis_finalize_emap_plots <- function(pathwayanalysis_out, palette){
+
+  if(missing(palette)){palette <- RColorBrewer::brewer.pal(Inf, 'Accent')}
+
+  msigdb_ora <- pathwayanalysis_out[[1]]
+  plots <- pathwayanalysis_out[[2]]
+  emap_total <- pathwayanalysis_out[[2]]$emap_noclusters
+  clustpercs <- pathwayanalysis_out[[3]]
+  reslist <- pathwayanalysis_out[[4]]
+  clustgeneslist <- pathwayanalysis_out[[5]]
+
+  #make sure clustpercs has significant clusters
+  if( !('significant' %in% colnames(clustpercs)) ){
+
+    stop('No significant clusters found, please run pathwayanalysis_declare_significant_clusters() function')
+  }
+
+  #make sure clustpercs has significant clusters
+  if( !('relabel' %in% colnames(clustpercs)) ){
+
+    stop('Informative cluster names not found, please run pathwayanalysis_relabel_significant_clusters() function')
+  }
+
+
+
+  sigclusts <- clustpercs[clustpercs$significant == T,]
+
+  # get pathways in the top clusters
+  sigclustpways <- reslist[names(reslist) %in% sigclusts$clust]
+  names(sigclustpways) <- sigclusts$relabel
+
+  # get pathwyas in top clusters as a df
+  sigclustpwaysdf <- bind_rows( lapply(1:length(sigclustpways), function(x){
+    i=sigclustpways[[x]]
+    name=names(sigclustpways)[x]
+    data.frame(pways=i, clust=name)
+  })
+  )
+
+
+  #colors are defined above
+  pal <- palette
+  levs <- nrow(sigclusts)
+  pal <- pal[1:levs]
+  pal <- c(pal, 'grey50')
+
+  #get coords from existing emap
+  dat <- emap_total$data
+  dat$Cluster <- NA
+  dat[match(sigclustpwaysdf$pways, dat$name),'Cluster'] <- sigclustpwaysdf$clust
+
+
+  repelaggr <- aggregate(x ~ Cluster, dat, mean)
+  repelaggr$y <- aggregate(y ~ Cluster, dat, mean)[,2]
+  repelaggr$Color <- pal[1:nrow(repelaggr)]
+
+
+  emap_total_withclust <- emap_total +  ggrepel::geom_label_repel(inherit.aes = F,
+                                                                  data = repelaggr, aes(x=x,y=y,label=Cluster, fill=Cluster),
+                                                                  fill= repelaggr$Color,
+                                                                  box.padding = 5, max.overlaps = 200,
+                                                                  # direction = 'x',
+                                                                  min.segment.length = Inf)
+
+
+  emap_final <-  emapplot(msigdb_ora, color='ClusterMain', repel=F, showCategory = 200, # layout='graphopt',
+                          node_label='None', #cex_label_category=0.4,
+                          coords = dat[,1:2],
+                          cex_category = 0.3,cex_line = 0.3 )+
+    scale_fill_manual(values = pal, name = 'Cluster')
+
+
+  plots <- list(emap_noclusters = emap_total,
+                emap_total_withclust = emap_total_withclust,
+                emap_onlyclusters = emap_final)
+  pathwayanalysis_out[[2]] <- plots
+
+  pathwayanalysis_out
+
+
+}
+
+
+
+
+
+#' Make plots for pathways in each cluster.
+#'
+#' @param pathwayanalysis_out output from the `pathwayanalysis()` function.
+#' @param sigres
+#'
+#' @return
+#' @export
+#'
+#' @examples
+pathwayanalysis_sigcluster_subplots <- function(pathwayanalysis_out, sigres){
+
+
+
+  msigdb_ora <- pathwayanalysis_out[[1]]
+  clustpercs <- pathwayanalysis_out[[3]]
+  reslist <- pathwayanalysis_out[[4]]
+  clustgeneslist <- pathwayanalysis_out[[5]]
+
+  #make sure clustpercs has significant clusters
+  if( !('significant' %in% colnames(clustpercs)) ){
+
+    stop('No significant clusters found, please run pathwayanalysis_declare_significant_clusters() function')
+  }
+
+  #make sure clustpercs has significant clusters
+  if( !('relabel' %in% colnames(clustpercs)) ){
+
+    stop('Informative cluster names not found, please run pathwayanalysis_relabel_significant_clusters() function')
+  }
+
+
+
+  sigclusts <- clustpercs[clustpercs$significant == T,]
+
+  #get the pwayres object from the msigdb dataframe
+  pwayres <- msigdb_ora@result
+
+  # get pathways in the top clusters
+  sigclustpways <- reslist[names(reslist) %in% sigclusts$clust]
+  names(sigclustpways) <- sigclusts$relabel
+
+
+  namedfc <- sigres[,2]
+  names(namedfc) <- sigres[,1]
+
+  subclustlist <- list()
+  for(sigclustidx in c(1:nrow(sigclusts)) ){
+
+    origlabel <- sigclusts[sigclustidx, 'clust']
+    relabel <- sigclusts[sigclustidx, 'relabel']
+
+    message(relabel)
+
+    #get the pathways
+    sigpways <- sigclustpways[[sigclustidx]]
+
+    #recompute...
+
+    ### suba emap skip it for now, THIS IS BROKEN CURRENTLY
+    # https://github.com/YuLab-SMU/clusterProfiler/issues/488
+
+    # subemap <- emapplot(msigdb_ora, color='Percent_of_DEGs', repel=T,
+    #                     #coords = subdat[,1:2],
+    #                     showCategory = sigpways,
+    #                     cex_label_category=0.4,
+    #                     cex_category = 0.3,cex_line = 0.3
+    # )+
+    #   scale_fill_distiller(palette = 'Reds', direction = 1, name='Percent of DEGs')+
+    #   ggtitle(relabel) +
+    #   theme(plot.title = element_text(hjust = 0.5))
+
+
+
+    #selct top pathways from cluster to show...
+    pwayres_inthisclust <- pwayres[pwayres$ID %in% sigpways,]
+
+    #select top 3 based n num DEGs
+    num_to_pick <- ifelse(nrow(pwayres_inthisclust) >= 3, 3, nrow(pwayres_inthisclust))
+    pwayres_inthisclust <- pwayres_inthisclust[order(pwayres_inthisclust$Percent_of_DEGs, decreasing = T),]
+    pways_to_show <- pwayres_inthisclust$ID[1:num_to_pick]
+
+    subcnet <- cnetplot(msigdb_ora, showCategory = pways_to_show, foldChange = namedfc,
+                        shadowtext='category',
+                        cex_gene = 0.5, cex_label_gene = 0.5, cex_label_category = 0.7)+
+      ggtitle(relabel) +
+      theme(plot.title = element_text(hjust = 0.5))
+
+
+
+
+    # subora@result$qvalue <- subora@result$Percent_of_DEGs
+    subddotplot <-  dotplot(msigdb_ora, showCategory=head(pwayres_inthisclust$ID,30),font.size=6)+
+      ggtitle(relabel) +
+      theme(plot.title = element_text(hjust = 0.5))
+
+
+
+
+    # pdf(paste0(clustoutdir, '/subplots_', origlabel, '.pdf'), width = 8, height = 8)
+    # print(subemap)
+    # print(subcnet)
+    # print(subddotplot)
+    #
+    # dev.off()
+
+
+    subclustlist[[sigclustidx]] <- list(
+                                        #subemap,
+                                        subcnet,
+                                        subddotplot)
+
+  }
+
+
+
+  pathwayanalysis_out$cluster_subplots <- subclustlist
 
 
   pathwayanalysis_out
