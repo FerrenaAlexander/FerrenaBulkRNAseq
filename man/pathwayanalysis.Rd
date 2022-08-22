@@ -7,12 +7,12 @@
 pathwayanalysis(sigres, term2gene)
 }
 \arguments{
-\item{sigres}{data.frame of significant genes. first column is gene names; second column is logfoldchange or other effect size; third column is Pvalue (adusted is best)}
+\item{sigres}{data.frame of significant genes. first column is gene names; second column is logfoldchange or other effect size.}
 
 \item{term2gene}{data.frame of pathways to check. first column is pathways, second column is genes.}
 }
 \value{
-a list object: first element is a ClusterProfiler object; second element is an "emap plot", a graph of pathways connected by jaccard similarity; third element is a data.frame with the connected nodes from the emap plot; 4th element is a list of pathways in each connected cluster.
+a list object: first element is a ClusterProfiler object; second element is an "emap plot", a graph of pathways connected by jaccard similarity; third element is a data.frame with the connected nodes from the emap plot; 4th element is a list of pathways in each connected cluster; 5th element is genes from the pathways in each cluster
 }
 \description{
 Run Overrepresentation Analysis via the ClusterProfiler workflow

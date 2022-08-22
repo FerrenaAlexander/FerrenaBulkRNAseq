@@ -323,13 +323,7 @@ pathwayanalysis <- function(sigres,
 #' @return a wordcloud  as a `recordedplot` plot object.
 #' @export
 #'
-#' @examples #get pathways: pathwayanalysis_out[[4]] #from pathwayanalysis function
-#' get wordcloud:
-#' wc <- wordcloud_pathways(pways, excludeWords = c('GOBP', 'REGULATION', 'CELL'),
-#' scale=c(3,0.3), random.order=F, random.color=F,
-#' colors= RColorBrewer::brewer.pal(8, "Dark2"))
-#'
-#'
+#' @examples
 #'
 #'
 pathwayanalysis_wordcloud <- function(pways, delimiter, excludeWords, ...){

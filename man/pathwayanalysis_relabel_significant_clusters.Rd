@@ -6,20 +6,17 @@
 \usage{
 pathwayanalysis_relabel_significant_clusters(
   pathwayanalysis_out,
-  clusterlabels,
-  clusters_to_label
+  clusterlabels
 )
 }
 \arguments{
-\item{pathwayanalysis_out}{output of the \code{pathwayanalysis} function.}
+\item{pathwayanalysis_out}{output from the \code{pathwayanalysis()} function.}
 
-\item{clusterlabels}{character vector; labels to give to the clusters of pathways}
-
-\item{clusters_to_label}{vector of integers; which clusters to re-name.}
+\item{clusterlabels}{character vector; labels to give to the clusters of pathways. If null, will use generic names.}
 }
 \value{
-will return a list, similar in format to the output of \code{pathwayanalysis} function, but with updated cluster labels in element 3.
+will return a list, similar in format to the output of \code{pathwayanalysis} function, but with updated object in element 1 and cluster labels in element 3.
 }
 \description{
-Relabel some pathway clusters with biologically relevant names
+Pathways often share overlap in their genes, which are identified in this pipeline as clusters. Typically, pathways will group together as a "functional module" that can be identified based on literature and biological knowledge, so this function labels the clusters as such. This is usually kind of difficult and takes some time inspecting genes and pathway names/descriptions in each cluster.
 }
