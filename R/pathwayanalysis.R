@@ -650,8 +650,8 @@ pathwayanalysis_finalize_emap_plots <- function(pathwayanalysis_out, palette){
 
   #instead of replacing plots list element, just append to it
 
-  pathwayanalysis_out[[2]]['emap_total_withclust'] <- emap_total_withclust
-  pathwayanalysis_out[[2]]['emap_onlyclusters'] <- emap_final
+  pathwayanalysis_out[[2]][['emap_total_withclust']] <- emap_total_withclust
+  pathwayanalysis_out[[2]][['emap_onlyclusters']] <- emap_final
 
   pathwayanalysis_out
 
