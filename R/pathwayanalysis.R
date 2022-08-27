@@ -1,11 +1,14 @@
 
 ### to do items
 
-# finish off:
-# left off from venn diagram
+# fix dependcy calls...
 
 # add dependencies to description:
 # tm, wordcloud, clusterprofiler, enrichplot, ggnewscale(?); others?
+
+
+
+
 
 # survival analysis: forest plots
 
@@ -61,7 +64,7 @@ pathwayanalysis <- function(sigres,
   options(ggrepel.max.overlaps = 2000)
 
   suppressMessages(
-    emap_total <- emapplot(msigdb_ora, color='Percent_of_DEGs', repel=T, showCategory = 200,
+    emap_total <- enrichplot::emapplot(msigdb_ora, color='Percent_of_DEGs', repel=T, showCategory = 200,
                            layout='graphopt', cex_label_category=0.4, cex_category = 0.3,cex_line = 0.3)+
       scale_fill_distiller(palette = 'Reds', direction = 1, name='Percent of DEGs')
   )
@@ -297,8 +300,28 @@ pathwayanalysis <- function(sigres,
   msigdb_ora@result[match(pwayres$ID, msigdb_ora@result$ID),] <- pwayres
 
 
+  #add some extra plots of overall res
+  #dot plot
+  dotplot_all <- enrichplot::dotplot(msigdb_ora, showCategory=30,font.size=6)+
+    ggtitle('Overall Pathways Dotplot') +
+    theme(plot.title = element_text(hjust = 0.5))
+
+
+  #wordcloud plot
+  wc <- pathwayanalysis_wordcloud(unlist(reslist),
+                                  scale=c(3,0.3), random.order=F, random.color=F,
+                                  colors= RColorBrewer::brewer.pal(8, "Dark2"))
+  title('Overall Pathways Wordcloud')
+  wc <- recordPlot()
+
+
+  plots <- list(emap_noclusters = emap_total,
+                dotplot_all = dotplot_all,
+                wordcloud_allpways = wc)
+
+
   output <- list(msigdb_ora_object = msigdb_ora,
-                 plots = list(emap_noclusters = emap_total),
+                 plots = plots,
                  cluster_percentages = clustpercs,
                  pathways_in_each_cluster = reslist,
                  genes_in_each_cluster = clustgeneslist)
@@ -610,17 +633,24 @@ pathwayanalysis_finalize_emap_plots <- function(pathwayanalysis_out, palette){
                                                                   min.segment.length = Inf)
 
 
-  emap_final <-  emapplot(msigdb_ora, color='ClusterMain', repel=F, showCategory = 200, # layout='graphopt',
+  rownames(dat) <- dat$name #rownames of coords must match names...
+  emap_final <-  enrichplot::emapplot(msigdb_ora, color='ClusterMain', repel=F, showCategory = 200, # layout='graphopt',
                           node_label='None', #cex_label_category=0.4,
                           coords = dat[,1:2],
                           cex_category = 0.3,cex_line = 0.3 )+
     scale_fill_manual(values = pal, name = 'Cluster')
 
 
-  plots <- list(emap_noclusters = emap_total,
-                emap_total_withclust = emap_total_withclust,
-                emap_onlyclusters = emap_final)
-  pathwayanalysis_out[[2]] <- plots
+
+  # plots <- list(emap_noclusters = emap_total,
+  #               emap_total_withclust = emap_total_withclust,
+  #               emap_onlyclusters = emap_final)
+  # pathwayanalysis_out[[2]] <- plots
+
+  #instead of replacing plots list element, just append to it
+
+  pathwayanalysis_out[[2]]['emap_total_withclust'] <- emap_total_withclust
+  pathwayanalysis_out[[2]]['emap_onlyclusters'] <- emap_final
 
   pathwayanalysis_out
 
@@ -712,7 +742,7 @@ pathwayanalysis_sigcluster_subplots <- function(pathwayanalysis_out, sigres){
     pwayres_inthisclust <- pwayres_inthisclust[order(pwayres_inthisclust$Percent_of_DEGs, decreasing = T),]
     pways_to_show <- pwayres_inthisclust$ID[1:num_to_pick]
 
-    subcnet <- cnetplot(msigdb_ora, showCategory = pways_to_show, foldChange = namedfc,
+    subcnet <- enrichplot::cnetplot(msigdb_ora, showCategory = pways_to_show, foldChange = namedfc,
                         shadowtext='category',
                         cex_gene = 0.5, cex_label_gene = 0.5, cex_label_category = 0.7)+
       ggtitle(relabel) +
@@ -722,10 +752,17 @@ pathwayanalysis_sigcluster_subplots <- function(pathwayanalysis_out, sigres){
 
 
     # subora@result$qvalue <- subora@result$Percent_of_DEGs
-    subddotplot <-  dotplot(msigdb_ora, showCategory=head(pwayres_inthisclust$ID,30),font.size=6)+
+    subddotplot <-  enrichplot::dotplot(msigdb_ora, showCategory=head(pwayres_inthisclust$ID,30),font.size=6)+
       ggtitle(relabel) +
       theme(plot.title = element_text(hjust = 0.5))
 
+
+
+    wc <- pathwayanalysis_wordcloud(unlist(reslist),
+                                    scale=c(3,0.3), random.order=F, random.color=F,
+                                    colors= RColorBrewer::brewer.pal(8, "Dark2"))
+    title('Overall Pathways Wordcloud')
+    wc <- recordPlot()
 
 
 
@@ -740,7 +777,8 @@ pathwayanalysis_sigcluster_subplots <- function(pathwayanalysis_out, sigres){
     subclustlist[[sigclustidx]] <- list(
                                         #subemap,
                                         subcnet,
-                                        subddotplot)
+                                        subddotplot,
+                                        wc)
 
   }
 
@@ -753,3 +791,35 @@ pathwayanalysis_sigcluster_subplots <- function(pathwayanalysis_out, sigres){
 
 }
 
+
+
+
+
+
+
+
+#' Unlist2 from AnnotationDBI package
+#'
+#' See `?AnnotationDbi::unlist2()` by Hervé Pagès
+#'
+#' @param x
+#' @param recursive
+#' @param use.names
+#' @param what.names
+#'
+#' @return
+#' @export
+#'
+#' @examples
+unlist2 <- function (x, recursive = TRUE, use.names = TRUE, what.names = "inherited")
+{
+  ans <- unlist(x, recursive, FALSE)
+  if (!use.names)
+    return(ans)
+  if (!is.character(what.names) || length(what.names) != 1)
+    stop("'what.names' must be a single string")
+  what.names <- match.arg(what.names, c("inherited", "full"))
+  names(ans) <- unlist(make.name.tree(x, recursive, what.names),
+                       recursive, FALSE)
+  ans
+}
