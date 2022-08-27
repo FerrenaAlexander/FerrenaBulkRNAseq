@@ -3,6 +3,7 @@
 
 # fix dependcy calls...
 
+
 # add dependencies to description:
 # tm, wordcloud, clusterprofiler, enrichplot, ggnewscale(?); others?
 
@@ -280,7 +281,7 @@ pathwayanalysis <- function(sigres,
 
   #add cluster info to obj metadata
   #names(reslist) <- clustpercs$relabel
-  pwayclust <- unlist2(reslist)
+  pwayclust <- AnnotationDbi::unlist2(reslist)
   pwayclust <- data.frame(Cluster=names(pwayclust),
                           ID = pwayclust)
 
@@ -794,32 +795,3 @@ pathwayanalysis_sigcluster_subplots <- function(pathwayanalysis_out, sigres){
 
 
 
-
-
-
-
-#' Unlist2 from AnnotationDBI package
-#'
-#' See `?AnnotationDbi::unlist2()` by Hervé Pagès
-#'
-#' @param x
-#' @param recursive
-#' @param use.names
-#' @param what.names
-#'
-#' @return
-#' @export
-#'
-#' @examples
-unlist2 <- function (x, recursive = TRUE, use.names = TRUE, what.names = "inherited")
-{
-  ans <- unlist(x, recursive, FALSE)
-  if (!use.names)
-    return(ans)
-  if (!is.character(what.names) || length(what.names) != 1)
-    stop("'what.names' must be a single string")
-  what.names <- match.arg(what.names, c("inherited", "full"))
-  names(ans) <- unlist(make.name.tree(x, recursive, what.names),
-                       recursive, FALSE)
-  ans
-}
