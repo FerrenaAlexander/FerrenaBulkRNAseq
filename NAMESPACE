@@ -3,6 +3,7 @@
 export(gsea.dotplot.onecol)
 export(gsea.results)
 export(heatmapplot)
+export(markerheatmap)
 export(modulescore)
 export(pathwayanalysis)
 export(pathwayanalysis_declare_significant_clusters)

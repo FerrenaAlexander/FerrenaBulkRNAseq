@@ -450,3 +450,222 @@ heatmapplot <- function(expmatrix,
 
 
 
+
+
+
+
+#' Marker annotated heatmap
+#'
+#' Heatmaps with annotations for samples (columns) and rows (genes), useful to plot celltype markers
+#'
+#' @param res a data.frame. one row for each gene. first three columns must be 1) gene symbol or id; 2) fold change; and 3) pvalue or padj. rest of the columns are normalized counts.
+#' @param geneannots a data.frame. one row for each gene. first column must be gene, second column must be celltype, third column must be color for each celltype
+#' @param metadata a data.frame. sample metadata, each row s a sample. must have rownames = colnames of samples in res (ie, colnames of `res[,-c(1:3)]` ); must also have a column called "Condition" for each sample condition, and a column called "Color" for each sample color; if two conditions, must have two colors
+#' @param lfc_thres numeric, a cutoff for lfc to be considered significant, default is 1
+#' @param pval_thres numeric, a cutoff for pval/padj to be considered significant, default is 0.05
+#' @param do.scale T/F, whether to scale genes, default is T
+#' @param do.log T/F, whether to log1p genes, default is T
+#' @param legend_caption string, caption to use above figure legend, by default will guess based on scale/log options
+#' @param drop.dup.genes T/F whether to drop duplicated genes, by default T, if set to F and dup genes are detected will throw an error
+#' @param ... additional options passed on to `ComplexHeatmap::Heatmap()`, see `?ComplexHeatmap::Heatmap()`
+#'
+#' @return
+#' @export
+#'
+#' @examples
+markerheatmap <- function(res,
+                          geneannots,
+                          metadata,
+                          lfc_thres,
+                          pval_thres,
+                          do.scale,
+                          do.log,
+                          legend_caption,
+                          drop.dup.genes,
+                          ...){
+
+  require(ComplexHeatmap)
+
+  if( missing(lfc_thres) ){lfc_thres <- 1}
+  if( missing(pval_thres) ){pval_thres <- 0.05}
+  if( missing(do.scale) ){do.scale <- T}
+  if( missing(do.log) ){do.log <- T}
+
+  if( missing(drop.dup.genes) ){drop.dup.genes <- T}
+
+
+  ## parse inputs ##
+  #genes, first column of gene annots
+  genes <- geneannots[,1]
+
+  #if no genes are in the res first column, stop here
+  if( all( !(genes %in% res[,1]) ) ){stop('No input genes found in first column of res')}
+
+  #if any genes are missing, warn and move on
+  if( any( !(genes %in% res[,1]) ) ){
+    missinggenes <- genes[!(genes %in% res[,1])]
+    missinggenewarn <- paste0("Some input genes are missing from the matrix, including:\n",
+                              paste(missinggenes, collapse = ', '))
+    warning(missinggenewarn)
+  }
+
+  #if any genes are duplicated, error
+  if( any( duplicated(genes) )  ){
+    dup_input_genes <- genes[duplicated(genes)]
+    dup_input_msg <- paste0("Some input genes duplicated, including:\n",
+                            paste(dup_input_genes, collapse = ', '))
+    stop(dup_input_msg)
+  }
+
+
+
+  #make sure there are no duplicate genes:
+  dupgenes_gem <- res[,1]
+  dupgenes_gem <- dupgenes_gem[table(dupgenes_gem)>1]
+
+  # if the duplicates are in the gene list, raise an error,
+  # if not, just drop them from res
+  if( any(dupgenes_gem %in% genes) ){
+    dupgenes_gem_IN_INPUT_GENES <- dupgenes_gem[dupgenes_gem %in% genes]
+    dupmsg <- paste0("Some input genes are duplicated in the matrix, including:\n",
+                     paste(dupgenes_gem_IN_INPUT_GENES, collapse = ', '))
+
+    # by default, we just drop the input duplicated genes
+    if(drop.dup.genes == T){
+      warning(dupmsg)
+      genes <- genes[!(genes %in% dupgenes_gem)]
+      res <- res[!(res$gene_symbol %in% dupgenes_gem),]
+    } else{
+
+      stop(dupmsg)
+
+    }
+
+
+    #if none of the input genes are dup genes, just drop them from the matrix
+  } else{
+    #using res, subset res to remove the duplicate genes
+    res <- res[!(res$gene_symbol %in% dupgenes_gem),]
+  }
+
+
+  #subset the stats and gem
+  res <- res[match(genes, res[,1]),]
+
+  #gene stats: first three columns
+  # gene name; LFC; pvalue or padj
+  stats <- res[,1:3]
+
+  #gem, everything except first 3 columns of res
+  gem <- res[,-c(1:3)]
+
+  #rownames of gem are first column of res
+  rownames(gem) <- res[,1]
+
+
+  #log or not
+
+  if(do.log==T){
+    gem <- log1p(gem)
+  }
+
+  #scale or not
+
+  if(do.scale==T){
+    gem <- t(scale(t(gem)))
+  } else{
+    gem <- as.matrix(gem)
+  }
+
+
+
+  # set up label, given logged / scaled gem
+  # use user-provided if given, if not try to guess from scale/log options
+
+  if(missing(legend_caption)){
+
+
+    if(do.log==T & do.scale==T){
+
+      legend_caption <- paste0('Scaled\nLogged\nNormalized\nCounts')
+
+    }
+
+    if(do.log==T & do.scale==F){
+
+      legend_caption <- paste0('Logged\nNormalized\nCounts')
+
+    }
+
+    if(do.log==F & do.scale==T){
+
+      legend_caption <- paste0('Scaled\nNormalized\nCounts')
+
+    }
+
+    if(do.log==F & do.scale==F){
+
+      legend_caption <- paste0('Normalized\nCounts')
+
+    }
+
+  }
+
+  #set up the column annotation
+  # this is kind of complicated...
+
+
+
+  #annotation df, has sample (column) name and color
+  # metadata needs:
+  # rownames of df need to be the column names of the samples
+  # it needs a column called "Condition"
+  # it needs a column called "Color"
+  annotdf <- data.frame(Sample = colnames(gem),
+                        # sampcheck = metadata[match(colnames(gem), rownames(metadata)), "Sample"],
+                        Condition = metadata[match(colnames(gem), rownames(metadata)), "Condition"],
+                        Color = metadata[match(colnames(gem), rownames(metadata)), "Color"])
+
+  #define colors, need to use this list thing for complexheatmap
+  # named vector: vector elements are colors, names are the values
+  # not factor, each element needs it...?
+  hacol <- list(Condition = annotdf$Color) ; names(hacol[[1]]) <- annotdf$Condition
+
+  #create the annotation object
+  ha <- ComplexHeatmap::HeatmapAnnotation(Condition = annotdf[,'Condition'], col = hacol, name = 'Condition')
+
+
+  #set up the marker annotation
+  # each gene is annotated according to celltype of origin
+  #geneannots[,1] --> gene
+  #geneannots[,2] --> celltype
+  #geneannots[,3] --> color
+
+  #define colors, need to use this list thing for complexheatmap
+  hacol <- list(Celltype = geneannots[,3]) ; names(hacol[[1]]) <- geneannots[,2]
+
+  #create the annotation object
+  ha_gene <- ComplexHeatmap::rowAnnotation(Celltype = geneannots[,2], col = hacol)
+
+
+
+
+  #sig marks
+  # using stats df, apply thesholds of LFC (second column) and pvalue (third column)
+  sigres <- stats[abs(stats[,2]) > lfc_thres,]
+  sigres <- sigres[sigres[,3] < pval_thres,]
+
+  #if the genes are in the significant res, we can add the significant marks
+  rownames(gem) <- ifelse(rownames(gem) %in% sigres[,1], yes = paste0('* ', rownames(gem), ' *'), no = rownames(gem))
+
+
+  ComplexHeatmap::Heatmap(gem,
+                          top_annotation = ha,
+                          right_annotation = ha_gene,
+                          name = legend_caption,
+                          ...
+  )
+}
+
+
+
